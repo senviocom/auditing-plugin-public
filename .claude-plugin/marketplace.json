@@ -1,0 +1,15 @@
+{
+  "name": "senvio",
+  "owner": {
+    "name": "Senvio"
+  },
+  "description": "Senvio plugins for Claude Desktop (Cowork)",
+  "plugins": [
+    {
+      "name": "iauditing",
+      "source": "./plugins/iauditing",
+      "description": "Práce na zakázkách v iAuditingu (iauditing.cz) chatem s Claudem: přehled zakázek, procedur a odpovědí přímo z přihlášeného prohlížeče, zápis odpovědí po potvrzení náhledu, dotazník pro klienta a Soubory zakázky (čtení, nahrání, připojení k otázce).",
+      "version": "0.5.0"
+    }
+  ]
+}

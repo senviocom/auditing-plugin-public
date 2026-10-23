@@ -9,7 +9,7 @@
 (function installSections(root) {
   'use strict';
 
-  var VERSION = '0.5.0';
+  var VERSION = '0.5.1';
   var NAME = 'iaud-sections';
 
   var isModule = typeof module === 'object' && module.exports;

@@ -24,9 +24,11 @@ password.
 - `.claude-plugin/marketplace.json`: the marketplace.
 - `plugins/iauditing/`: the released plugin. Each release is tagged
   `iauditing-v<version>`.
+- `helpers/<version>/`: each release's in-page helpers, served by GitHub
+  Pages (the second address the plugin loads them from, after jsDelivr).
 - The plugin's in-page helpers (`plugins/iauditing/skills/iauditing/references/*.js`)
   are loaded into the user's own iAuditing tab from jsDelivr at the release
-  tag, with a script tag that carries each file's SHA-384 hash (Subresource
+  tag (or GitHub Pages at `helpers/<version>/`), with a script tag that carries each file's SHA-384 hash (Subresource
   Integrity). The browser runs a file only if it is byte-for-byte the one the
   plugin was released with. The helpers call iAuditing's web API in the
   user's logged-in session, at a human pace, and send nothing anywhere else.

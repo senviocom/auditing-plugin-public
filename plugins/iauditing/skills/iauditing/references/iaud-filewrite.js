@@ -4,12 +4,13 @@
 // iaud-files.js; it evaluates to "iaud-filewrite <version> loaded, délka <n>,
 // hash <h>". Every change has the rails of iaud-write (PLAN §5): allowlist →
 // role → preview → the user's "ano" → one write → read back, never repeated.
-// A file to upload reaches the page as base64 in parts (stageFile), checked
-// against the SHA-256 Claude computed in the workspace folder.
+// A file to upload never passes through Claude: the page asks iAuditing for an
+// upload URL and Claude's shell sends the file there with curl (uploadFile),
+// then the page confirms it and reads it back (finishUpload).
 (function installFileWrite(root) {
   'use strict';
 
-  var VERSION = '0.5.1';
+  var VERSION = '0.6.0';
   var NAME = 'iaud-filewrite';
 
   var isModule = typeof module === 'object' && module.exports;
@@ -27,13 +28,13 @@
   if (!writing || !iaud.extensions['iaud-write']) return NAME + ': nejdřív je potřeba načíst iaud-write.js (verze ' + VERSION + ').';
   if (!files || !iaud.extensions['iaud-files']) return NAME + ': nejdřív je potřeba načíst iaud-files.js (verze ' + VERSION + ').';
 
-  // Each part of base64 goes through one JavaScript call; the whole file has to
-  // pass through Claude's own output, so it stays small (VERIFY.md V5).
-  var MAX_UPLOAD = 100000;
-  var MAX_PART = 60000;
-  var MAX_PARTS = 10;
-  var BIG = 'Větší soubor prosím nahrajte do Souborů sami ve webovém rozhraní iAuditingu (přetažením do Souborů); ' +
+  // iAuditing's own limit (frontend schema, app 1.2.6: ERR_API_STORAGE_TOO_BIG).
+  var MAX_UPLOAD = 52428800;
+  var UPLOAD_YOURSELF = 'Nahrajte ho prosím do Souborů sami ve webovém rozhraní iAuditingu (přetažením do Souborů); ' +
     'připojit ho k otázce pak můžu já.';
+  // iAuditing takes text/plain at storage/upload but refused it at confirm
+  // (ERR_API_STORAGE_UNSUPPORTED_MIMETYPE, VERIFY.md V5); CSV is plain text too.
+  var NOT_UPLOADED = { txt: true, csv: true };
 
   // The app's rules for a file name (frontend schema, app 1.2.6): 3–128 chars
   // after NFC, none of <>:"/\|?*% or control characters, no leading space, no
@@ -74,13 +75,9 @@
     }
     if (/^\s|[. ]$/.test(n) || RESERVED.test(n)) return 'název souboru nesmí začínat mezerou ani končit tečkou nebo mezerou.';
     if (!MIME[extension(n)]) {
-      return 'iAuditing přijme jen soubory PDF, DOCX, XLSX, PPTX, ODT, CSV, TXT, PNG, JPEG, TIFF a HEIC (název „' + n + '“).';
+      return 'iAuditing přijme od Clauda jen soubory PDF, DOCX, XLSX, PPTX, ODT, PNG, JPEG, TIFF a HEIC (název „' + n + '“).';
     }
     return null;
-  }
-
-  function toHex(buf) {
-    return Array.prototype.map.call(new Uint8Array(buf), function (b) { return (b < 16 ? '0' : '') + b.toString(16); }).join('');
   }
 
   function toBase64(buf) {
@@ -92,57 +89,44 @@
 
   function digest(bytes) { return crypto.subtle.digest('SHA-256', bytes); }
 
-  // -- staging: the file's bytes, in this page only
+  function hexToBase64(hex) {
+    var s = '';
+    for (var i = 0; i < hex.length; i += 2) s += String.fromCharCode(parseInt(hex.slice(i, i + 2), 16));
+    return btoa(s);
+  }
 
-  var staged = {};
+  function hasControl(s) {
+    for (var i = 0; i < s.length; i++) if (s.charCodeAt(i) < 32) return true;
+    return false;
+  }
 
-  // One part of a file from the workspace folder: {name, part, parts, data
-  // (base64), sha256 (hex, of the whole file)}. When all parts are in, the file
-  // is decoded and checked; nothing is sent to iAuditing.
-  function stageFile(input) {
-    input = input || {};
-    var name = typeof input.name === 'string' ? input.name.normalize('NFC') : input.name;
-    var problem = nameProblem(name);
-    if (problem) return Promise.reject(fail('BAD_NAME', 'Soubor nenahraji: ' + problem));
-    var parts = Number(input.parts);
-    var part = Number(input.part);
-    if (!(parts >= 1 && parts <= MAX_PARTS && part >= 1 && part <= parts) || typeof input.data !== 'string' ||
-      input.data.length > MAX_PART || !/^[A-Za-z0-9+/=\s]*$/.test(input.data)) {
-      return Promise.reject(fail('BAD_PART', 'Část souboru je poškozená nebo moc velká (jedna část nejvýš ' + MAX_PART +
-        ' znaků, nejvýš ' + MAX_PARTS + ' částí).'));
+  // Why this file from the workspace folder can't be uploaded, or null. The
+  // file is {name, path, size, sha256}: the name in Soubory, its absolute path
+  // in Claude's shell, its size in bytes and its hex SHA-256.
+  function fileProblem(file) {
+    var problem = nameProblem(file.name);
+    if (problem) return problem;
+    if (NOT_UPLOADED[extension(file.name)]) return 'soubory TXT a CSV iAuditing při nahrání od Clauda odmítá. ' + UPLOAD_YOURSELF;
+    if (typeof file.path !== 'string' || file.path.charAt(0) !== '/' || hasControl(file.path)) {
+      return 'chybí celá cesta k souboru ve složce (začíná „/“).';
     }
-    if (!/^[0-9a-fA-F]{64}$/.test(String(input.sha256 || ''))) {
-      return Promise.reject(fail('BAD_PART', 'Chybí kontrolní součet celého souboru, spočítaný ve složce.'));
+    if (!(Number.isInteger(file.size) && file.size > 0)) return 'chybí velikost souboru v bajtech, změřená ve složce.';
+    if (file.size > MAX_UPLOAD) {
+      return 'soubor má ' + files.sizeLabel(file.size) + ', iAuditing přijme nejvýš ' + files.sizeLabel(MAX_UPLOAD) + '.';
     }
-    var s = staged[name];
-    if (!s || s.parts !== parts || s.sha256 !== String(input.sha256).toLowerCase() || part === 1) {
-      s = staged[name] = { parts: parts, sha256: String(input.sha256 || '').toLowerCase(), data: [] };
-    }
-    s.data[part - 1] = input.data.replace(/\s+/g, '');
-    var received = s.data.filter(function (x) { return typeof x === 'string'; }).length;
-    var out = { name: name, received: received, parts: parts, complete: false };
-    if (received < parts) return Promise.resolve(out);
-    var binary = atob(s.data.join(''));
-    if (binary.length > MAX_UPLOAD) {
-      delete staged[name];
-      return Promise.reject(fail('TOO_BIG', 'Soubor má ' + files.sizeLabel(binary.length) + '; přes chat přenesu nejvýš ' +
-        files.sizeLabel(MAX_UPLOAD) + '. ' + BIG));
-    }
-    var bytes = new Uint8Array(binary.length);
-    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    return digest(bytes).then(function (hash) {
-      if (toHex(hash) !== s.sha256) {
-        delete staged[name];
-        throw fail('BAD_TRANSFER', 'Soubor „' + name + '“ nedorazil celý nebo beze změny (kontrolní součet nesedí). Pošlete ho prosím znovu.');
-      }
-      s.bytes = bytes;
-      s.base64Sha = toBase64(hash);
-      out.complete = true;
-      out.size = bytes.length;
-      out.sizeLabel = files.sizeLabel(bytes.length);
-      out.type = (files.TYPES[MIME[extension(name)]] || {}).label;
-      return out;
-    });
+    if (!/^[0-9a-f]{64}$/.test(file.sha256)) return 'chybí kontrolní součet SHA-256 celého souboru, spočítaný ve složce.';
+    return null;
+  }
+
+  // One shell word in single quotes; an inner ' becomes '\''.
+  var SQ = String.fromCharCode(39);
+  function shellWord(s) { return SQ + String(s).split(SQ).join(SQ + String.fromCharCode(92) + SQ + SQ) + SQ; }
+
+  // The curl PUT Claude runs in its shell: it prints only the HTTP code.
+  function curlCommand(path, url, headers) {
+    var out = 'curl -sS -o /dev/null -w ' + shellWord('%{http_code}') + ' --max-time 600 -X PUT --data-binary @' + shellWord(path);
+    Object.keys(headers).forEach(function (k) { out += ' -H ' + shellWord(k + ': ' + headers[k]); });
+    return out + ' ' + shellWord(url);
   }
 
   // -- the confirmation, shared by every change
@@ -209,78 +193,116 @@
     return m[1];
   }
 
-  // Uploads a staged file (stageFile) into the zakázka's Soubory: upload slot
-  // (180 s) → PUT with the signed headers → confirm → read back (V5).
-  function uploadFile(engagement, name, options) {
-    var key = typeof name === 'string' ? name.normalize('NFC') : name;
+  // Uploads a file from Claude's workspace folder into the zakázka's Soubory
+  // without its bytes passing through Claude. After the confirmed preview the
+  // page asks iAuditing for an upload URL (valid 180 s) and returns `command`,
+  // a curl PUT with the signed headers, for Claude's shell; finishUpload then
+  // confirms the file and reads it back (V5).
+  function uploadFile(engagement, file, options) {
+    file = file || {};
+    var want = { name: typeof file.name === 'string' ? file.name.normalize('NFC') : file.name, path: file.path,
+      size: Number(file.size), sha256: String(file.sha256 || '').toLowerCase() };
     return guarded(engagement, options, function () {
-      var s = staged[key];
-      if (!s || !s.bytes) {
-        return Promise.reject(fail('NOT_STAGED', 'Soubor „' + name + '“ ještě není v prohlížeči celý; ' +
-          'nejdřív je potřeba ho do prohlížeče předat po částech.'));
-      }
+      var problem = fileProblem(want);
+      if (problem) return Promise.reject(fail('BAD_FILE', 'Soubor nenahraji: ' + problem));
       return openAudit(engagement).then(function (ctx) {
-        var same = ctx.docs.filter(function (d) { return files.loose(d.name) === files.loose(key); });
+        var same = ctx.docs.filter(function (d) { return files.loose(d.name) === files.loose(want.name); });
         var problems = same.length ? ['V Souborech už je soubor se stejným názvem „' + same[0].name + '“; ' +
           'nový prosím pojmenujte jinak, ať se nepletou.'] : [];
-        var contentType = MIME[extension(key)];
+        var contentType = MIME[extension(want.name)];
         var preview = head('upload', ctx);
-        preview.file = brief({ name: key, mimetype: contentType, size: s.bytes.length });
+        preview.file = brief({ name: want.name, mimetype: contentType, size: want.size });
         return {
           problems: problems,
-          sig: ['upload', ctx.audit.auditId, key, s.sha256, same.map(function (d) { return d.storageId; })],
+          sig: ['upload', ctx.audit.auditId, want.name, want.path, want.size, want.sha256, same.map(function (d) { return d.storageId; })],
           preview: preview,
-          perform: function () { return upload(ctx, key, s, contentType); },
+          perform: function () { return requestSlot(ctx, want, contentType); },
         };
       });
     });
   }
 
-  function upload(ctx, name, s, contentType) {
+  // Uploads waiting for Claude's curl, by storageId.
+  var pending = {};
+
+  function requestSlot(ctx, file, contentType) {
     var r = reportOf('upload', ctx);
-    var sid = null;
-    var stage = 'slot';
+    var base64Sha = hexToBase64(file.sha256);
     return core.apiGet('staff/me/get').then(function (me) {
       if (!me || !me.userId) throw fail('UNEXPECTED', 'iAuditing nevrátil, kdo je přihlášený.');
-      var headers = { 'Content-Type': contentType, 'x-amz-checksum-sha256': s.base64Sha, 'if-none-match': '*',
+      var headers = { 'Content-Type': contentType, 'x-amz-checksum-sha256': base64Sha, 'if-none-match': '*',
         'x-amz-meta-uploaderid': me.userId, 'x-amz-meta-tenantid': tenant() };
-      return core.apiSend('POST', 'storage/upload', { name: name, contentType: contentType, size: s.bytes.length,
-        auditId: ctx.audit.auditId, sha256: s.base64Sha }).then(function (slot) {
-        sid = slot.storageId;
-        stage = 'put';
-        return fetch(slot.uploadUrl, { method: 'PUT', headers: headers, body: s.bytes }).catch(function () {
-          throw fail('NETWORK', 'spojení s úložištěm se přerušilo');
-        });
+      return core.apiSend('POST', 'storage/upload', { name: file.name, contentType: contentType, size: file.size,
+        auditId: ctx.audit.auditId, sha256: base64Sha }).then(function (slot) {
+        pending[slot.storageId] = { ctx: ctx, file: file, base64Sha: base64Sha };
+        r.ok = true;
+        r.done = false;
+        r.storageId = slot.storageId;
+        r.command = curlCommand(file.path, slot.uploadUrl, headers);
+        r.message = 'iAuditing připravil místo pro soubor „' + file.name + '“; posílám ho tam přímo ze složky.';
+        return r;
       });
-    }).then(function (put) {
-      if (!put.ok) throw fail('UPLOAD', 'úložiště soubor nepřijalo (HTTP ' + put.status + ')');
-      stage = 'confirm';
-      return core.apiSend('POST', files.docsBase(ctx.audit) + '/' + sid + '/confirm', { name: name });
-    }).then(function () {
+    }).catch(function (err) {
+      // A slot that is never confirmed doesn't show up in Soubory (V5).
+      r.error = err.message;
+      r.code = err.code;
+      r.uploadYourself = true;
+      r.message = 'Nahrání se nepovedlo (' + err.message + '); v Souborech nic nepřibylo. ' + UPLOAD_YOURSELF;
+      return r;
+    });
+  }
+
+  // Finishes an upload after Claude ran `command`: httpStatus is the code curl
+  // printed. Confirms the file in Soubory and reads it back by downloading it
+  // and comparing its SHA-256. Each upload is finished once.
+  function finishUpload(storageId, result) {
+    var p = pending[storageId];
+    if (!p) {
+      // Finished already, or the page reloaded since uploadFile (pending lives in the page only).
+      return Promise.reject(fail('NOT_PENDING', 'Nahrání souboru ' + storageId + ' tady nečeká na dokončení (skončilo, nebo se ' +
+        'stránka mezitím znovu načetla); nic neměním. Podívejte se prosím do Souborů. Pokud tam soubor není: ' + UPLOAD_YOURSELF));
+    }
+    delete pending[storageId];
+    var ctx = p.ctx;
+    var name = p.file.name;
+    var r = reportOf('upload', ctx);
+    r.done = true;
+    var code = Number(result && result.httpStatus);
+    if (code !== 200) {
+      // Blocked on the way (a sandbox proxy prints 000), refused or expired:
+      // the unconfirmed slot never shows up in Soubory, and Claude doesn't
+      // try another route.
+      r.uploadYourself = true;
+      r.message = 'Soubor „' + name + '“ se mi ze složky do iAuditingu poslat nepodařilo (curl: ' + (code || '000') +
+        '); v Souborech nic nepřibylo. ' + UPLOAD_YOURSELF;
+      return Promise.resolve(r);
+    }
+    var confirmed = false;
+    return core.apiSend('POST', files.docsBase(ctx.audit) + '/' + storageId + '/confirm', { name: name }).then(function () {
+      confirmed = true;
       return relisted(ctx);
     }).then(function (docs) {
-      var d = docs && docs.filter(function (x) { return x.storageId === sid; })[0];
-      if (!d || d.name !== name || d.size !== s.bytes.length) {
+      var d = docs && docs.filter(function (x) { return x.storageId === storageId; })[0];
+      if (!d || d.name !== name || d.size !== p.file.size) {
         r.readBack = docs ? 'NESOUHLASÍ' : 'neověřeno';
         return null;
       }
       r.file = files.publicFile(d);
       return files.download(ctx.audit, d).then(digest).then(function (hash) {
-        r.readBack = toBase64(hash) === s.base64Sha ? 'OK' : 'NESOUHLASÍ';
+        r.readBack = toBase64(hash) === p.base64Sha ? 'OK' : 'NESOUHLASÍ';
       });
     }).then(function () {
       r.ok = r.readBack === 'OK';
       r.message = r.ok ? 'Soubor „' + name + '“ je v Souborech zakázky, kontrola po nahrání sedí (stažený obsah je shodný).'
         : 'Soubor jsem odeslal, ale kontrola po nahrání nesouhlasí (' + r.readBack + '). Dál nic neměním; zkontrolujte prosím Soubory.';
-      if (r.ok) delete staged[name];
       return r;
     }, function (err) {
-      if (stage !== 'confirm' && !err.uncertain) {
-        r.message = 'Nahrání se nepovedlo (' + err.message + '); v Souborech nic nepřibylo. Dál nic neměním.';
-        r.error = err.message;
-        return r;
-      }
-      return failed(r, err, 'Dokončení nahrání');
+      if (confirmed) return failed(r, err, 'Kontrola po nahrání');
+      failed(r, err, 'Dokončení nahrání');
+      // A refused confirm leaves nothing in Soubory; an uncertain one may have.
+      r.uploadYourself = true;
+      r.message += r.uncertain ? ' Pokud soubor v Souborech není: ' + UPLOAD_YOURSELF : ' V Souborech nic nepřibylo. ' + UPLOAD_YOURSELF;
+      return r;
     });
   }
 
@@ -467,8 +489,8 @@
     });
   }
 
-  iaud.stageFile = stageFile;
   iaud.uploadFile = uploadFile;
+  iaud.finishUpload = finishUpload;
   iaud.attachFile = attachFile;
   iaud.detachFile = detachFile;
   iaud.renameFile = renameFile;

@@ -102,25 +102,42 @@ sure whether it happened) and stop. Never retry.
 
 ## 7. Upload a file from the workspace folder
 
-1. The file must be in the workspace folder. Check its size with code: **at
-   most 100 000 bytes** (the bytes travel through this chat). A bigger file:
-   tell the user to upload it in the web app (Soubory, drag and drop); you
-   can attach it afterwards.
-2. In your sandbox compute its SHA-256 (hex) and its base64 without line
-   breaks (e.g. `shasum -a 256 f` and `base64 < f | tr -d '\n'`), and cut
-   the base64 into parts of at most 50 000 characters.
-3. For each part run `iaud.stageFile({name: '<název>', part: N, parts:
-   <počet>, data: '<část>', sha256: '<hex>'})`, copying the part exactly.
-   The name is the file's own name unless the user wants another (3–128
-   characters; PDF, DOCX, XLSX, PPTX, ODT, CSV, TXT, PNG, JPEG, TIFF, HEIC).
-   The last part returns `complete: true` with the size; `BAD_TRANSFER`
-   means a part arrived changed: send all parts again from part 1.
-   Nothing reaches iAuditing yet.
-4. Preview `iaud.uploadFile('<zakázka>', '<název>', {dryRun: true})`: show
-   the zakázka, the name, type and size. A file of the same name already in
-   Soubory is refused: ask for another name.
-5. After "ano": the result's `readBack: 'OK'` means the file is in Soubory
-   and its downloaded copy is byte for byte the same.
+The file never passes through this chat: the page gets an upload address
+from iAuditing, and your shell sends the file there with `curl`. Never copy
+a file's content (base64 or otherwise) into a JavaScript call, and don't
+look for another way when this one fails.
+
+1. The file must be in the workspace folder. In your shell take its
+   absolute path, its size in bytes and its SHA-256 (hex), e.g.
+   `wc -c < "<cesta>"` and `shasum -a 256 "<cesta>"` (or `sha256sum`). At
+   most 50 MB (iAuditing's limit). Types: PDF, DOCX, XLSX, PPTX, ODT, PNG,
+   JPEG, TIFF, HEIC. iAuditing refuses TXT and CSV uploaded this way: the
+   user uploads those in the web app.
+2. Preview `iaud.uploadFile('<zakázka>', {name: '<název>', path: '<cesta>',
+   size: <bajty>, sha256: '<hex>'}, {dryRun: true})`. The name is the
+   file's own name unless the user wants another (3–128 characters). Show
+   the zakázka, the name, type and size. `BAD_FILE`: tell the user its
+   message. A file of the same name already in Soubory is refused: ask for
+   another name.
+3. After "ano", call it once with `{confirm: preview.confirm}`. With
+   `ok: true` it returns `storageId` and `command`: a `curl` PUT to
+   iAuditing's file storage, with an upload address valid for 3 minutes.
+   Run `command` in your shell **exactly as given and right away** (allow
+   up to 10 minutes for a big file); it prints only the HTTP code, e.g.
+   `200`. Don't change it, don't run it twice, and don't show it to the
+   user (it is long and technical). With `ok: false` (iAuditing refused
+   the upload address) tell the user `message` and stop.
+4. Then always call `iaud.finishUpload('<storageId>', {httpStatus: <the
+   printed code as a number>})`, also when curl failed or printed nothing
+   (pass `0`). With `readBack: 'OK'` the file is in Soubory and its
+   downloaded copy is byte for byte the same. With `uploadYourself: true`
+   your shell couldn't send the file (e.g. Cowork's sandbox network
+   doesn't reach iAuditing's file storage, or the address expired):
+   nothing was added. Tell the user `message` (they upload the file in the
+   web app, Soubory, drag and drop; you can attach it afterwards) and stop.
+   `NOT_PENDING` (the page reloaded in between, or it was finished
+   already): tell the user its message and stop; don't start over unless
+   the user asks.
 
 ## 8. Attach a file to an answer, or detach it
 

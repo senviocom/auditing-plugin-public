@@ -1,6 +1,6 @@
 {
   "name": "iauditing",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Práce na zakázkách v iAuditingu (iauditing.cz) chatem s Claudem: přehled zakázek, procedur a odpovědí přímo z přihlášeného prohlížeče, zápis odpovědí po potvrzení náhledu, dotazník pro klienta a Soubory zakázky (čtení, nahrání, připojení k otázce).",
   "author": {
     "name": "Senvio"

@@ -71,6 +71,10 @@ Say in one Czech line which registers you will open, then go one by one.
   way of acting, capital, shareholders). Too big for one fetch for a large
   company; then use the OR page.
 - ARES has no unreliable-payer flag and no bank accounts: use the DPH register.
+- NACE codes differ in length: ARES gives the 5-digit CZ-NACE subclass
+  (`74990`), and iAuditing or a document may hold the 4-digit class
+  (`7490`, or `74.90`). A code that starts with the other one is the same
+  activity, not a mismatch; don't report it as one.
 
 ### Obchodní rejstřík (Browser pane)
 
@@ -211,22 +215,22 @@ It runs only in the register's own page, with that page's cookies, and sends
 nothing anywhere else. In the tab of the register:
 
 1. **Already loaded?** Run:
-   `typeof vz === 'undefined' ? 'načíst' : vz.version === '0.7.0' && vz.selfCheck === 'délka 39784, hash efd18add' ? 'OK' : 'načíst'`
+   `typeof vz === 'undefined' ? 'načíst' : vz.version === '0.7.1' && vz.selfCheck === 'délka 39784, hash 0cc13ab6' ? 'OK' : 'načíst'`
 2. `načíst`: run this loader exactly as written:
 
 <!-- loader: verejne-zdroje.js -->
 ```js
 new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v0.7.0/plugins/iauditing/skills/iauditing/references/verejne-zdroje.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/0.7.0/verejne-zdroje.js'];
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v0.7.1/plugins/iauditing/skills/iauditing/references/verejne-zdroje.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/0.7.1/verejne-zdroje.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-qLnAiqId0VuaNB/vF1fG5MsbFqRcgu8yW6whfv3V+0m/ru/Nc+shIkq5R5QiDQXo';
+    s.integrity = 'sha384-hIFBP/PqXilETbGnqPegY8n94/RetQwi4zFp2nKkYr9MDcKaRLUF3hnUpTFPDtbt';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof vz === 'object' && vz.version === '0.7.0' && 'verejne-zdroje 0.7.0 loaded, ' + vz.selfCheck) || 'nenačteno'); };
+    s.onload = function () { done((typeof vz === 'object' && vz.version === '0.7.1' && 'verejne-zdroje 0.7.1 loaded, ' + vz.selfCheck) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -240,7 +244,7 @@ new Promise(function (done) {
    tool, as for `iaud.js`. Either way the result must be exactly:
 
 ```
-verejne-zdroje 0.7.0 loaded, délka 39784, hash efd18add
+verejne-zdroje 0.7.1 loaded, délka 39784, hash 0cc13ab6
 ```
 
 A different length or hash means it arrived incomplete: load it once more;

@@ -1,6 +1,6 @@
 ---
 name: iauditing
-description: Works on the user's audit engagements (zakázky) in iAuditing (iauditing.cz) through the logged-in Browser pane. Use when the user mentions iAuditing, zakázky, audit, procedury or asks e.g. "Jaké mám zakázky?", "Pojďme na audit XYZ", "Jak jsme na tom se zakázkou…", "Jak jsem daleko se zakázkou…", "Ukaž mi proceduru 180", "Vyplň v proceduře 101…", "Zapiš odpověď…", "Přidej v proceduře 180 sekci Zásoby", "Přejmenuj sekci…", "Smaž sekci…", "Připrav dotazník pro klienta", "Klient vrátil dotazník", "Připrav návrh odpovědí pro proceduru 253", "Vyplň závěr auditu", "Vyplň proceduru 101 z dokumentů ve složce", "Potvrzuji návrh u otázky 2", "Co je v Souborech zakázky?", "Přečti smlouvu ze Souborů", "Nahraj tuto smlouvu do Souborů a připoj ji k otázce 7", "Smaž soubor ze Souborů", "Doplň veřejné údaje o klientovi", "Zkontroluj klienta v rejstříku a sankčních seznamech", "Je klient v insolvenci?", "Vygeneruj shrnutí procedury 101", "Uprav shrnutí takto…", "Vrať původní shrnutí", "Odešli proceduru 101 ke kontrole".
+description: Works on the user's audit engagements (zakázky) in iAuditing (iauditing.cz) through the logged-in Browser pane. Use when the user mentions iAuditing, zakázky, audit, procedury or asks e.g. "Jaké mám zakázky?", "Pojďme na audit XYZ", "Jak jsme na tom se zakázkou…", "Jak jsem daleko se zakázkou…", "Ukaž mi proceduru 180", "Vyplň v proceduře 101…", "Zapiš odpověď…", "Přidej v proceduře 180 sekci Zásoby", "Přejmenuj sekci…", "Smaž sekci…", "Připrav dotazník pro klienta", "Klient vrátil dotazník", "Připrav návrh odpovědí pro proceduru 253", "Vyplň závěr auditu", "Vyplň proceduru 101 z dokumentů ve složce", "Co je v Souborech zakázky?", "Přečti smlouvu ze Souborů", "Nahraj tuto smlouvu do Souborů a připoj ji k otázce 7", "Smaž soubor ze Souborů", "Doplň veřejné údaje o klientovi", "Zkontroluj klienta v rejstříku a sankčních seznamech", "Je klient v insolvenci?", "Vygeneruj shrnutí procedury 101", "Uprav shrnutí takto…", "Vrať původní shrnutí", "Odešli proceduru 101 ke kontrole".
 ---
 
 # iAuditing
@@ -36,7 +36,7 @@ what the documents don't answer), **list and read the zakázka's Soubory**
 (Word, Excel, PDF with text and text files, read in the browser), **save answers** to
 *Text*, *Ano/Ne*, *Výběr jedné možnosti*, *Výběr více možností* and *Datum*
 questions, also inside sekce, **add, rename or remove a sekce** of a
-repeating form, **confirm a draft** the auditor approved in chat, **upload a
+repeating form, **upload a
 file** from the workspace folder to Soubory, **attach a file to an
 answer** or detach it, **rename or delete a file** in Soubory, and
 **generate a procedure's AI Shrnutí** with iAuditing's own AI or **edit or
@@ -70,11 +70,17 @@ These protect real client data on a production account.
 
 - **Write only what the user confirmed.** Every change in iAuditing goes
   through a preview the user saw and answered with an explicit "ano" (see
-  "Saving answers"): preview → "ano" → write → check → show it in the pane.
+  "Saving answers"): preview → "ano" → write → check → list in chat what
+  changed → show it in the pane.
   One "ano" covers exactly that preview, once. Never write without it, never
   repeat a write, and never replace or erase an existing answer the user
   didn't see in the preview. Writes go only into the zakázky the helper
   allows (for now only PROBIS Audit a.s.).
+- **Nothing extra goes into iAuditing.** Write only what the preview showed:
+  no tags, marks, "návrh" labels or source lines in Popis, Komentář or the
+  answer. Sources belong in the chat. After every write, list in chat each
+  change that was made in iAuditing (see "Report"); that list is the
+  record, there is no later confirmation step.
 - Don't click, type or submit anything in the iAuditing page that changes
   data; navigating and looking is fine. Files you create go only into the
   user's workspace folder.
@@ -152,7 +158,7 @@ Run each snippet below with the browser's JavaScript tool on the iAuditing
 tab. The tool waits for promises.
 
 1. **Already loaded?** Run:
-   `typeof iaud === 'undefined' ? 'chybí' : iaud.version === '0.6.1' && iaud.selfCheck === 'délka 42290, hash ac7c2b59' ? 'OK' : 'jiná verze'`
+   `typeof iaud === 'undefined' ? 'chybí' : iaud.version === '0.7.0' && iaud.selfCheck === 'délka 40228, hash 458b3be9' ? 'OK' : 'jiná verze'`
    - `OK`: go to step 2.
 2. **Otherwise** (`chybí` or `jiná verze`; a full page reload removes the
    helper), run this loader exactly as written. The page fetches the helper
@@ -162,16 +168,16 @@ tab. The tool waits for promises.
 <!-- loader: iaud.js -->
 ```js
 new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v0.6.1/plugins/iauditing/skills/iauditing/references/iaud.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/0.6.1/iaud.js'];
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v0.7.0/plugins/iauditing/skills/iauditing/references/iaud.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/0.7.0/iaud.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-ufO+xYuF3EVV85xbKjL8banlIiZ4PWX2UyawlORGSHMZd1NLGDM7MI1gMyT3695Q';
+    s.integrity = 'sha384-7ufasoXTj/yHlgAkMzwSAx2lfes1mxBFAIViVRFuyt97eiE0ZhKpUHkYQ7PoLiIq';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof iaud === 'object' && iaud.version === '0.6.1' && 'iaud 0.6.1 loaded, ' + iaud.selfCheck) || 'nenačteno'); };
+    s.onload = function () { done((typeof iaud === 'object' && iaud.version === '0.7.0' && 'iaud 0.7.0 loaded, ' + iaud.selfCheck) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -189,7 +195,7 @@ new Promise(function (done) {
 The result must be exactly:
 
 ```
-iaud 0.6.1 loaded, délka 42290, hash ac7c2b59
+iaud 0.7.0 loaded, délka 40228, hash 458b3be9
 ```
 
 A different length or hash means the helper arrived incomplete or changed.
@@ -358,22 +364,22 @@ iAuditing's stored counters on purpose.
 ### Load the write part (once per tab, after iaud.js)
 
 1. Make sure `iaud.js` is loaded (step 1). Then run:
-   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-write']) === 'délka 29744, hash b0fa5e24' ? 'OK' : 'načíst'`
+   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-write']) === 'délka 27877, hash 86467b50' ? 'OK' : 'načíst'`
 2. `načíst`: run this loader exactly as written:
 
 <!-- loader: iaud-write.js -->
 ```js
 new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v0.6.1/plugins/iauditing/skills/iauditing/references/iaud-write.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/0.6.1/iaud-write.js'];
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v0.7.0/plugins/iauditing/skills/iauditing/references/iaud-write.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/0.7.0/iaud-write.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-qstO2xNpdCiEg/mvo20i0uFdQ+Ry85NXBcy4umPpytZSO59cyG9bppwnvfzzJRUl';
+    s.integrity = 'sha384-GptvBcIneEfez/O751o1jeoo+JmqH48nkw/oRAqT7CWANmzedI/EaJPYUI2NN2h4';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-write'] && 'iaud-write 0.6.1 loaded, ' + iaud.extensions['iaud-write']) || 'nenačteno'); };
+    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-write'] && 'iaud-write 0.7.0 loaded, ' + iaud.extensions['iaud-write']) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -386,18 +392,18 @@ new Promise(function (done) {
    JavaScript tool, as for `iaud.js`. Either way the result must be exactly:
 
 ```
-iaud-write 0.6.1 loaded, délka 29744, hash b0fa5e24
+iaud-write 0.7.0 loaded, délka 27877, hash 86467b50
 ```
 
 The same rule as in step 1 applies: a different length or hash, or a text
 saying to load `iaud.js` first, means load the files again (`iaud.js`
 first); never go on with a mismatch.
 
-### 1. Prepare the items
+### 1. Draft the answers and prepare the items
 
 Work from `iaud.showProcedure` (it gives `questionId`, `sectionId`, the
 type and the current answer). One item per question:
-`{questionId, sectionId, answer, source, kind}`.
+`{questionId, sectionId, answer}`.
 
 - `answer`: always a text; an empty text (`''`) erases the answer. Per type
   (`type` in `showProcedure`):
@@ -414,18 +420,12 @@ type and the current answer). One item per question:
   that isn't an option, fits several options, or is not a real date; its
   Czech reason is in the preview's `problems`. Never "fix" a refused
   choice by picking an option yourself: ask the user.
-- `kind`: `"fact"` only when the answer is taken as it is from a source (a
-  document, a register, or the user's own words in chat); `"draft"` for
-  anything you formulated or judged. Most answers are drafts.
-  `"confirmed"` only for a draft the auditor approved in chat (see
-  "Confirming a draft"), never on your own.
-- `source`: one short line: the file and page/sheet/row, a register with its
-  "stav k" date, or `uživatel v chatu, <datum>`; several joined with `; `.
-  E.g. `vypis-esm.pdf, s. 1`, `ARES, stav k 21. 10. 2026`. Not needed for an
-  erase. The helper writes it as the last line of the question's *Popis* as
-  `[FAKT] Zdroj: …` or `[NÁVRH – ověřit] Zdroj: …` (a confirmed draft as
-  plain `Zdroj: …`); the auditor's own text in Popis stays as it is, and on
-  a later save only this line is replaced.
+- Only the answer is written. Popis and Komentář stay exactly as they are,
+  and nothing is added to the answer: no tag, no "návrh", no source line.
+- Keep each answer's source for the chat: the file and page/sheet/row, a
+  register with its "stav k" date, an earlier procedure ("dle procedury
+  120, otázka 7"), or "uživatel v chatu". You show it in the preview and in
+  the report, never in iAuditing.
 - A question inside a sekce needs that item's `sectionId` (each sekce has
   its own answer). The question right after the repeated part has
   `sectionId: null` and one answer per form. If the user didn't say which
@@ -433,7 +433,7 @@ type and the current answer). One item per question:
   like any other.
 - Items with `readOnly` can't be saved; leave them to the web app.
 
-### 2. Preview (nothing is written)
+### 2. Preview and ask (nothing is written)
 
 Run `iaud.saveAnswers('<zakázka>', '<procedura>', items, {dryRun: true})`.
 It returns `ok`, `rows`, `problems`, `writes`, `progress {before, after}`
@@ -444,18 +444,13 @@ and `confirm`.
   preview again.
 - Show the preview as a short Czech table, one row per item: číslo (`no`,
   with the sekce `section` if any, e.g. "5 (sekce Tržby)"), otázka, co se
-  stane (`actionLabel`), the new answer (`new`) in full, and the mark with
-  the source (`mark`). `new` and `old` are already readable as the app
-  shows them (Ano/Ne, the chosen option, dates as 31.12.2026); for *Výběr
-  více možností* list `newOptions` (and `oldOptions`) one per line.
-  - **Drafts must stand out**: write "NÁVRH – ověřit" in the row itself and
-    say how many of the rows are drafts, so confirming the batch doesn't
-    hide them.
+  stane (`actionLabel`), the new answer (`new`) in full, and where it comes
+  from (the source you kept). `new` and `old` are already readable as the
+  app shows them (Ano/Ne, the chosen option, dates as 31.12.2026); for
+  *Výběr více možností* list `newOptions` (and `oldOptions`) one per line.
   - For a row with `overwrite: true`, show the current answer (`old`) and
     the new one, both in full, and say plainly that the existing answer will
     be replaced or erased. For an erase, add its `note`.
-  - When a row has `oldDescription`, the Popis changes: show the old Popis
-    (`oldDescription`) and the new one (`description`), both in full.
   - Rows with `beze změny` need only one line.
   - End with the progress change (`progress.before` → `progress.after`) and
     the question: "Mám to takto zapsat do iAuditingu? Napište prosím „ano“."
@@ -479,41 +474,25 @@ after an error. Errors before anything is written:
 - `NOT_ALLOWED`, `NO_ROLE`, `NOT_EDITABLE`, `NOT_FOUND`: pass the message
   on; the user can make the change in the web app.
 
-### 4. Report and show it
+### 4. Report: list every change in chat, then stop
 
 - The result has `ok`, `message`, `saved` (each with `readBack`: `OK` means
   read back from iAuditing and identical), `failed`, `notSent` and
   `progress {before, after, patched, note?}`.
-- `ok: true`: say it in one or two lines, e.g. "Uloženo 3 odpovědi, z toho
-  2 jako návrh k ověření. Postup procedury 101: 0/4 → 3/4."
-- `ok: false`: say exactly which questions were saved (`saved`), which
+- `ok: true`: under a heading like "Změny v iAuditingu", list **every**
+  change that was made, one line per saved question: číslo (with the
+  sekce), otázka, what happened (`actionLabel`: nová odpověď, přepsání
+  odpovědi, vymazání odpovědi), the answer as written in full (for an
+  overwrite also the previous one) and its source. End with the progress,
+  e.g. "Postup procedury 101: 0/4 → 3/4."
+- `ok: false`: the same list for what was saved (`saved`), then which
   failed (`failed`, with its `error`) and which were not sent (`notSent`).
   If `failed.uncertain` is true, say it is not sure whether that one was
   saved, and what the check found (`failed.readBack`). Stop; don't retry.
 - Then show it in the view tab (see "The iAuditing tab and the view tab").
   The helpers stay loaded in the iAuditing tab.
-- A draft stays marked `[NÁVRH – ověřit]` until the auditor confirms it
-  (below), it is saved again as a fact, or the auditor removes the mark in Popis.
-
-### Confirming a draft ("Potvrzuji návrh u otázky 2")
-
-When the auditor says a draft is right ("potvrzuji návrh u otázky 2",
-"otázky 1 a 3 jsou v pořádku"), save it again without the tag:
-
-1. Read the procedure's answers with `iaud.readAnswers('<zakázka>',
-   ['<procedura>'])` and take the named questions (`no`, with the sekce if
-   any). Only items with `draft: true` can be confirmed; for any other,
-   say it isn't a draft (already confirmed or a fact) and leave it.
-   Confirm only the questions the auditor named; for "všechno" list
-   every draft by number in the preview.
-2. One item per question: `{questionId, sectionId, answer: <its answer as
-   read>, kind: "confirmed"}`. Leave out `source`: the helper keeps the one
-   already on the line. If the auditor changes the answer while confirming,
-   put their text in `answer`; it is still `"confirmed"`.
-3. Preview, "ano" and write as above. The row's action is "jen označení
-   zdroje"; show the Popis old → new, so the auditor sees that only the tag
-   goes away. After the write, say e.g. "Návrh u otázky 2 je potvrzený,
-   v Popisu zůstal jen zdroj."
+- That's the end of the task. Don't ask the auditor to check or confirm
+  the answers, and don't propose a next step.
 
 ## Client questionnaire ("Připrav dotazník pro klienta")
 
@@ -531,7 +510,7 @@ follow it.** In short:
   plain Czech. Each item keeps the `ref` it came from.
 - Build the Word file with `scripts/dotaznik.py build` into the workspace
   folder. A returned file is read with `scripts/dotaznik.py read`, and its
-  answers become drafts citing "dotazník klienta, otázka N".
+  answers become proposed answers citing "dotazník klienta, otázka N".
 - The user sends the file to the client; you never send it anywhere.
 
 ## Answers from earlier procedures ("Připrav návrh odpovědí pro proceduru 253")
@@ -547,12 +526,10 @@ follow it.** In short:
 - Read their answers with `iaud.readAnswers('<zakázka>', ['<číslo>', …])`
   (at most 5 procedures, one after the other; part of `iaud.js`).
 - Cite each answer you use by its `ref`: "dle procedury 120, otázka 7".
-  Conclusions are always drafts for the auditor; only a value copied
-  unchanged from a confirmed earlier answer is a fact.
-- An earlier answer that is empty or still a draft (`empty`, `draft`) is
-  reported to the user, not built on.
-- Saving goes through "Saving answers" as usual, with the citations as
-  `source`.
+- An earlier answer that is empty (`empty`) is reported to the user, not
+  built on.
+- Saving goes through "Saving answers" as usual; the citations are the
+  sources you show in chat.
 
 ## Answers from documents ("Vyplň proceduru 101 z dokumentů ve složce")
 
@@ -571,9 +548,9 @@ and follow it.** In short:
   check they are about this zakázka's client.
 - Cite every value by file and page (or sheet and row), and re-check any
   "problem in a document" before you mention it.
-- Default is a draft with evidence; `"fact"` only for one value copied
-  unchanged. A question with no evidence becomes a question to the user
-  ("where should I look?" first, the answer itself last), never a guess.
+- Every proposed answer comes with its evidence. A question with no
+  evidence becomes a question to the user ("where should I look?" first,
+  the answer itself last), never a guess.
 - Saving goes through "Saving answers" as usual.
 
 ## Public registers ("Doplň veřejné údaje o klientovi")
@@ -597,8 +574,7 @@ follow it.** In short:
   hand (the firm's access) or brings the client's own extract. Never guess
   beneficial owners.
 - Every answer cites the register and its "stav k" date; these are not
-  official extracts. Facts only for one value copied unchanged; the rest are
-  drafts. Saving goes through "Saving answers" as usual.
+  official extracts. Saving goes through "Saving answers" as usual.
 
 ## Soubory: list and read ("Co je v Souborech zakázky?", "Přečti smlouvu ze Souborů")
 
@@ -610,22 +586,22 @@ Soubory and follow it.** In short:
 ### Load the Soubory part (once per tab, after iaud.js)
 
 1. Make sure `iaud.js` is loaded (step 1). Then run:
-   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-files']) === 'délka 42577, hash 87d3e055' ? 'OK' : 'načíst'`
+   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-files']) === 'délka 42577, hash eea75dd9' ? 'OK' : 'načíst'`
 2. `načíst`: run this loader exactly as written:
 
 <!-- loader: iaud-files.js -->
 ```js
 new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v0.6.1/plugins/iauditing/skills/iauditing/references/iaud-files.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/0.6.1/iaud-files.js'];
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v0.7.0/plugins/iauditing/skills/iauditing/references/iaud-files.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/0.7.0/iaud-files.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-H+yu7WxOLe8Koi+v0OKugR8TEeR23nFLDUaq2hrf8c0BszZBM9UM0f++yFrMdQD6';
+    s.integrity = 'sha384-hsgj1Yhu7I3Jw046pRJjtTs/ym9vzBdu7VvHe5lcIw7VEaSbUCFtSwwYSgFQtumB';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-files'] && 'iaud-files 0.6.1 loaded, ' + iaud.extensions['iaud-files']) || 'nenačteno'); };
+    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-files'] && 'iaud-files 0.7.0 loaded, ' + iaud.extensions['iaud-files']) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -638,7 +614,7 @@ new Promise(function (done) {
    result must be exactly:
 
 ```
-iaud-files 0.6.1 loaded, délka 42577, hash 87d3e055
+iaud-files 0.7.0 loaded, délka 42577, hash eea75dd9
 ```
 
 Same rule as for the other files: on a different length or hash, or a text
@@ -669,22 +645,22 @@ Only when the user asks for it, and only in the zakázky the helper allows
 (for now PROBIS Audit a.s.). Follow `references/soubory.md` §6–9.
 
 1. Make sure `iaud.js`, `iaud-write.js` and `iaud-files.js` are loaded. Then run:
-   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-filewrite']) === 'délka 24427, hash e4707ff4' ? 'OK' : 'načíst'`
+   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-filewrite']) === 'délka 24427, hash 54a6c108' ? 'OK' : 'načíst'`
 2. `načíst`: run this loader exactly as written:
 
 <!-- loader: iaud-filewrite.js -->
 ```js
 new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v0.6.1/plugins/iauditing/skills/iauditing/references/iaud-filewrite.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/0.6.1/iaud-filewrite.js'];
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v0.7.0/plugins/iauditing/skills/iauditing/references/iaud-filewrite.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/0.7.0/iaud-filewrite.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-hAP7Ls5V2GaUNE7RHlmlAbZfch8oDSiTF3eIUWtNhO/S6aKTHKFCtLnT49ebHMAo';
+    s.integrity = 'sha384-vYbeCUY5XsvRuVth2dckQkG1aDczsA/BaJ4t7qRpjzEflbO59SLrsSe+W/mkkp6+';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-filewrite'] && 'iaud-filewrite 0.6.1 loaded, ' + iaud.extensions['iaud-filewrite']) || 'nenačteno'); };
+    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-filewrite'] && 'iaud-filewrite 0.7.0 loaded, ' + iaud.extensions['iaud-filewrite']) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -697,7 +673,7 @@ new Promise(function (done) {
    result must be exactly:
 
 ```
-iaud-filewrite 0.6.1 loaded, délka 24427, hash e4707ff4
+iaud-filewrite 0.7.0 loaded, délka 24427, hash 54a6c108
 ```
 
 Same rule as for the other files; the order is `iaud.js`, `iaud-write.js`,
@@ -731,22 +707,22 @@ removed sekce takes **all its answers** with it, for good.
 ### Load the sekce part (once per tab, after iaud.js and iaud-write.js)
 
 1. Make sure `iaud.js` and `iaud-write.js` are loaded (as for saving). Then run:
-   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-sections']) === 'délka 15143, hash 6892db14' ? 'OK' : 'načíst'`
+   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-sections']) === 'délka 15143, hash 28023e30' ? 'OK' : 'načíst'`
 2. `načíst`: run this loader exactly as written:
 
 <!-- loader: iaud-sections.js -->
 ```js
 new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v0.6.1/plugins/iauditing/skills/iauditing/references/iaud-sections.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/0.6.1/iaud-sections.js'];
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v0.7.0/plugins/iauditing/skills/iauditing/references/iaud-sections.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/0.7.0/iaud-sections.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-VfgrubQTKTCCa5/RX5l03+ppu8LkfX9WK5HsskMOywkpcmd3ZpCTZKalkq6OB+nY';
+    s.integrity = 'sha384-P/p/iQiV4j7ogc++YB1YwSJWLZjYCZZnbC4/c24WVtBiPyP3rzR9ZwHHG4mFpitG';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-sections'] && 'iaud-sections 0.6.1 loaded, ' + iaud.extensions['iaud-sections']) || 'nenačteno'); };
+    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-sections'] && 'iaud-sections 0.7.0 loaded, ' + iaud.extensions['iaud-sections']) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -759,7 +735,7 @@ new Promise(function (done) {
    result must be exactly:
 
 ```
-iaud-sections 0.6.1 loaded, délka 15143, hash 6892db14
+iaud-sections 0.7.0 loaded, délka 15143, hash 28023e30
 ```
 
 Same rule as for the other files: on a different length or hash, or a text
@@ -819,22 +795,22 @@ in the zakázky the helper allows (for now PROBIS Audit a.s.).
 ### Load the procedure part (once per tab, after iaud.js and iaud-write.js)
 
 1. Make sure `iaud.js` and `iaud-write.js` are loaded (as for saving). Then run:
-   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-procedure']) === 'délka 28088, hash 5b003c66' ? 'OK' : 'načíst'`
+   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-procedure']) === 'délka 27528, hash c23b8672' ? 'OK' : 'načíst'`
 2. `načíst`: run this loader exactly as written:
 
 <!-- loader: iaud-procedure.js -->
 ```js
 new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v0.6.1/plugins/iauditing/skills/iauditing/references/iaud-procedure.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/0.6.1/iaud-procedure.js'];
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v0.7.0/plugins/iauditing/skills/iauditing/references/iaud-procedure.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/0.7.0/iaud-procedure.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-IxX0lA2fLraET+g6WoCAz2BCTBQkfwaxdroRqT+m+/J1xcxv55yzCKkMoYDl8q4Z';
+    s.integrity = 'sha384-f9eYfbI6FkMlxodSqASy0n7xLmhB+yE0lVNYF9/l/0L3Rflz0oMTIhlDQhUgf/r1';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-procedure'] && 'iaud-procedure 0.6.1 loaded, ' + iaud.extensions['iaud-procedure']) || 'nenačteno'); };
+    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-procedure'] && 'iaud-procedure 0.7.0 loaded, ' + iaud.extensions['iaud-procedure']) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -847,7 +823,7 @@ new Promise(function (done) {
    result must be exactly:
 
 ```
-iaud-procedure 0.6.1 loaded, délka 28088, hash 5b003c66
+iaud-procedure 0.7.0 loaded, délka 27528, hash c23b8672
 ```
 
 Same rule as for the other files: on a different length or hash, or a text
@@ -942,8 +918,7 @@ the zakázky the helper allows (for now PROBIS Audit a.s.). Load
 
 1. `iaud.submitProcedure('<zakázka>', '<procedura>', {dryRun: true})`. The
    preview has `ok`, `actionLabel`, `status`, `progress`, `unanswered`
-   (`no`, `section`, `question`), `drafts` (`no`, `section`, `question`,
-   `source`: answers still marked `[NÁVRH – ověřit]`), `summary {chars,
+   (`no`, `section`, `question`), `summary {chars,
    empty}`, `prepared {by, at}` (who and when, as the app fills in
    "Připravil"; `by: 'vy'` is the user), `problems`, `warnings` and
    `confirm`.
@@ -952,18 +927,14 @@ the zakázky the helper allows (for now PROBIS Audit a.s.). Load
    - `ok: false`: pass on each text in `problems` and list the `unanswered`
      questions by number and text. Don't offer to submit; offer what helps
      instead (fill in the answers, generate the Shrnutí).
-   - List every draft in `drafts` by number, question and source, and say
-     plainly that these answers are still Claude's drafts the auditor
-     hasn't confirmed. Offer to confirm them first (see "Confirming a
-     draft"); submitting with drafts is the user's choice.
    - Show every text in `warnings` as it is (the last one always says that
      nothing can be changed after submitting until it is returned).
    - Ask: "Mám proceduru 101 odeslat ke kontrole? Napište prosím „ano“."
 3. After an explicit "ano" to this preview: the same call once with
    `{confirm: preview.confirm}` instead of `{dryRun: true}`. The errors
    before anything is sent are those of saving answers (`PREVIEW_CHANGED`:
-   something changed since the preview, e.g. a draft was confirmed: new
-   preview, ask again). Never call it twice, never retry.
+   something changed since the preview, e.g. an answer or the Shrnutí:
+   new preview, ask again). Never call it twice, never retry.
 4. The result has `ok`, `message`, `status` (read back, "V revizi"),
    `readBack` (`OK`: iAuditing confirmed it and the procedure is under
    review), `prepared` and `open`. Say it in one line. With `ok: false` pass

@@ -9,7 +9,7 @@
 (function installVz(root) {
   'use strict';
 
-  var VERSION = '0.6.1';
+  var VERSION = '0.7.0';
   var NAME = 'verejne-zdroje';
 
   var isModule = typeof module === 'object' && module.exports;

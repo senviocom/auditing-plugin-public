@@ -54,8 +54,8 @@ Decide from each question's own text (no ready-made list), as in
 
 Public sources answer facts. A question asking whether the auditor did
 something (identified the client, checked, informed someone) is not answered
-by the register: the register is the evidence, the answer stays a draft for
-the auditor, or a question to them.
+by the register: the register is the evidence for the auditor's answer,
+or the question goes to them.
 
 ## 3. Read each source
 
@@ -173,38 +173,37 @@ požádejte klienta o jeho vlastní výpis z ESM a uložte ho do složky."
   (`dokumenty.md`).
 - Until then the ESM question goes into "Potřebuji od vás", unanswered.
 
-## 5. Fact or draft, and the source line
+## 5. The source
 
-- `"fact"` only for one value copied unchanged from a register that the
-  question asks for exactly (the IČO, the registered seat, "Nespolehlivý
-  plátce: NE", the number of ISIR debtors). Everything selected, combined or
-  judged is `"draft"`, as is every answer to a question about the auditor's
-  own work (e.g. "Bylo zjištěno, zda…?" with Ano).
+- A value copied unchanged from a register (the IČO, the registered seat,
+  "Nespolehlivý plátce: NE", the number of ISIR debtors) needs only its
+  source. For anything selected, combined or judged, and for every answer
+  to a question about the auditor's own work (e.g. "Bylo zjištěno, zda…?"
+  with Ano), say in one short line what you concluded and why.
 - **An Ano/Ne question that reads two ways** (e.g. "Bylo zjištěno, zda je
   klient osobou, na kterou se vztahují mezinárodní sankce?": *Ano* = the
   check was done, or *Ano* = the client is sanctioned?): don't pick a
   meaning. Give the finding ("bez shody na obou seznamech") and ask the
   auditor which answer they want; if the question is already answered, show
   that answer and say the preview would replace it.
-- `source`: the register and its "stav k" date, as on the page:
+- The source (shown in chat, never written into iAuditing): the register
+  and its "stav k" date, as on the page:
   `Obchodní rejstřík, výpis platných, stav k 21. 10. 2026`,
   `ARES, stav k 13. 7. 2026`, `ISIR, stav k 21. 10. 2026`,
   `registr plátců DPH, stav k 21. 10. 2026`,
   `Sbírka listin, B 11473/SL8/KSOS (účetní závěrka 2025), s. 1`,
   `sankční seznam EU, stav k 15. 10. 2026 (bez shody)`. Several joined with
-  `; `. For an Ano/Ne answer put the result in brackets in the source, since
-  only that line goes into Popis.
+  `; `. For an Ano/Ne answer put the result in brackets in the source.
 - Use the date the page states, not today's date, unless the page shows
   only today's (the DPH register's "Údaje zobrazeny dne").
 
 ## 6. Show the proposal, then save only on "ano"
 
-As in `dokumenty.md` step 7: per question číslo, otázka, navržená odpověď,
-**důkaz** (the register, what it says, its date) and "NÁVRH – ověřit" or
-"fakt"; then "Potřebuji od vás" (ESM, anything only the auditor knows); end
-with "Mám návrhy připravit k zápisu do iAuditingu?". Saving goes through
-"Saving answers" in SKILL.md: preview → "ano" → write. Close the register
-tabs when you are done.
+As in `dokumenty.md` step 7: per question číslo, otázka, navržená odpověď
+and **důkaz** (the register, what it says, its date); then "Potřebuji od
+vás" (ESM, anything only the auditor knows). Saving goes through "Saving
+answers" in SKILL.md: one preview, one "ano", write, then the list of
+changes in chat. Close the register tabs when you are done.
 
 ## The helper `verejne-zdroje.js` (in a register's tab, never in iAuditing)
 
@@ -212,22 +211,22 @@ It runs only in the register's own page, with that page's cookies, and sends
 nothing anywhere else. In the tab of the register:
 
 1. **Already loaded?** Run:
-   `typeof vz === 'undefined' ? 'načíst' : vz.version === '0.6.1' && vz.selfCheck === 'délka 39784, hash 923aff71' ? 'OK' : 'načíst'`
+   `typeof vz === 'undefined' ? 'načíst' : vz.version === '0.7.0' && vz.selfCheck === 'délka 39784, hash efd18add' ? 'OK' : 'načíst'`
 2. `načíst`: run this loader exactly as written:
 
 <!-- loader: verejne-zdroje.js -->
 ```js
 new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v0.6.1/plugins/iauditing/skills/iauditing/references/verejne-zdroje.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/0.6.1/verejne-zdroje.js'];
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v0.7.0/plugins/iauditing/skills/iauditing/references/verejne-zdroje.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/0.7.0/verejne-zdroje.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-bUX/67TvJAT9r0Rujxu1SJ1RuHn9g6ALraG5KmNAsoNh8hSY8mrsPg2OVTiKSJld';
+    s.integrity = 'sha384-qLnAiqId0VuaNB/vF1fG5MsbFqRcgu8yW6whfv3V+0m/ru/Nc+shIkq5R5QiDQXo';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof vz === 'object' && vz.version === '0.6.1' && 'verejne-zdroje 0.6.1 loaded, ' + vz.selfCheck) || 'nenačteno'); };
+    s.onload = function () { done((typeof vz === 'object' && vz.version === '0.7.0' && 'verejne-zdroje 0.7.0 loaded, ' + vz.selfCheck) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -241,7 +240,7 @@ new Promise(function (done) {
    tool, as for `iaud.js`. Either way the result must be exactly:
 
 ```
-verejne-zdroje 0.6.1 loaded, délka 39784, hash 923aff71
+verejne-zdroje 0.7.0 loaded, délka 39784, hash efd18add
 ```
 
 A different length or hash means it arrived incomplete: load it once more;

@@ -130,17 +130,15 @@ the column.
    the ref names a sekce, that `sectionId`; by name only if the ID is gone).
 4. **Draft the procedure answer from the client's answer** and give its
    source as `dotazník klienta, otázka N` (a document: `dotazník klienta,
-   dokument DN`), with the mark of the source line (PLAN §4, #17):
-   - by default `[NÁVRH – ověřit] Zdroj: dotazník klienta, otázka N`: the
-     client's statement is evidence the auditor still weighs;
+   dokument DN`), in the chat only:
    - an Ano/Ne, choice or date question gets an exact value (Ano/Ne, one of
      the options, a date); put any explanation the client gave in your
      message to the user, not into the answer;
    - a document request is "Ano" only when the file is actually in the
      workspace folder or in the zakázka's Soubory. A tick in *Předáno* says
      the client sent it, not that it arrived;
-   - an empty answer, "nevím" or "doplníme": no draft; list these as still open.
-5. **Show the drafts** per procedure: the question, the client's answer word
-   for word, your draft and the source line. This version of the plugin
-   can't save answers: say the auditor can copy them into iAuditing, or let
-   a later version save them after confirmation.
+   - an empty answer, "nevím" or "doplníme": no proposal; list these as still open.
+5. **Show the proposals** per procedure: the question, the client's answer
+   word for word, your proposed answer and its source. Saving goes through
+   "Saving answers" in SKILL.md: one preview per procedure, one "ano", then
+   the list of changes in chat.

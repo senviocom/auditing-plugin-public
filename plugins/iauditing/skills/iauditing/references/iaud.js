@@ -13,7 +13,7 @@
 (function install(root) {
   'use strict';
 
-  var VERSION = '0.6.1';
+  var VERSION = '0.7.0';
 
   // The iAuditing version this helper was tested against (PLAN.md §6).
   var TESTED_APP_VERSION = '1.2.6';
@@ -816,50 +816,13 @@
     });
   }
 
-  // The plugin's source line, the last line of a Popis (PLAN §4, #17, #20):
-  // "[FAKT] Zdroj: …", "[NÁVRH – ověřit] Zdroj: …", or "Zdroj: …" once the
-  // auditor confirmed a draft in chat. The plain form counts only as a last
-  // paragraph of its own (the whole Popis, or after an empty line), since an
-  // auditor may write "Zdroj:" too; the save preview shows old and new Popis.
-  var MARK_LINE = /^(?:\[(FAKT|NÁVRH – ověřit)\] )?Zdroj: /;
-  var MARK_KINDS = { FAKT: 'fact', 'NÁVRH – ověřit': 'draft' };
-  var NL = String.fromCharCode(10);
-
-  // {auditor, mark}: the auditor's text (minus our empty line) and our mark {kind, source, line} or null.
-  function splitDescription(description) {
-    var text = description || '';
-    var last = text.split(NL).pop();
-    var m = MARK_LINE.exec(last);
-    var rest = m ? text.slice(0, text.length - last.length) : '';
-    var own = rest === '' || rest.slice(-2) === NL + NL;
-    if (!m || (!m[1] && !own)) return { auditor: text, mark: null };
-    var auditor = rest === '' ? '' : own ? rest.slice(0, -2) : rest.slice(0, -1);
-    var kind = m[1] ? MARK_KINDS[m[1]] : 'confirmed';
-    return { auditor: auditor, mark: { kind: kind, source: last.slice(m[0].length), line: last } };
-  }
-
-  // showForm, with each Popis split into the auditor's text and the plugin's mark.
-  function answerView(component, form, options) {
-    var shown = showForm(component, form, options);
-    shown.parts.forEach(function (part) {
-      part.items.forEach(function (item) {
-        if (item.heading) return;
-        var split = splitDescription((findAnswer(form.answers || [], item.questionId, item.sectionId) || {}).description);
-        item.description = isBlank(split.auditor) ? undefined : redacted(split.auditor, options);
-        if (split.mark) item.mark = { kind: split.mark.kind, source: redacted(split.mark.source, options) };
-      });
-    });
-    return shown;
-  }
-
   // An answer of readAnswers: listQuestions' reference plus what is stored.
   function answerItem(number, item, section) {
     if (item.heading) return item;
     var out = listItem(number, item, section);
     delete out.answered;
     out.empty = !item.answered;
-    ['answer', 'description', 'comment', 'attachments', 'mark'].forEach(function (k) { if (item[k] !== undefined) out[k] = item[k]; });
-    out.draft = !!(item.mark && item.mark.kind === 'draft');
+    ['answer', 'description', 'comment', 'attachments'].forEach(function (k) { if (item[k] !== undefined) out[k] = item[k]; });
     return out;
   }
 
@@ -887,18 +850,18 @@
       });
       var list = [];
       return found.reduce(function (done, p) {
-        return done.then(function () { return readForms(procedureBase(audit, p), p, options, answerView); }).then(function (forms) {
+        return done.then(function () { return readForms(procedureBase(audit, p), p, options, showForm); }).then(function (forms) {
           var t = p.template || {};
           var number = procedureNumber(p.displayId || t.displayId);
           var computed = sumProgress(forms, 'computed');
           var out = { number: number, name: p.name || t.name, procedureId: p.procedureId, status: procedureStatus(p),
-            progress: computed && computed.progress + '/' + computed.total, answered: 0, empty: 0, drafts: 0, items: [] };
+            progress: computed && computed.progress + '/' + computed.total, answered: 0, empty: 0, items: [] };
           forms.forEach(function (f) {
             if (f.readOnly) { out.readOnly = out.readOnly ? out.readOnly + ' ' + f.readOnly : f.readOnly; return; }
             f.parts.forEach(function (part) {
               part.items.forEach(function (item) {
                 var a = answerItem(number, item, part.section);
-                if (!a.heading) { out[a.empty ? 'empty' : 'answered']++; if (a.draft) out.drafts++; }
+                if (!a.heading) out[a.empty ? 'empty' : 'answered']++;
                 out.items.push(a);
               });
             });
@@ -940,7 +903,7 @@
     procedureStatus: procedureStatus, auditLabel: auditLabel, normalizeName: normalizeName, checkId: checkId,
     showForm: showForm, layoutForm: layoutForm, computeProgress: computeProgress, readOnlyReason: readOnlyReason,
     isBlank: isBlank, isHeading: isHeading, findAnswer: findAnswer, itemKey: itemKey, displayAnswer: displayAnswer,
-    redacted: redacted, fnv1a: fnv1a, TYPE_LABELS: TYPE_LABELS, splitDescription: splitDescription,
+    redacted: redacted, fnv1a: fnv1a, TYPE_LABELS: TYPE_LABELS,
     markChanged: markChanged,
   };
   // Self-checks of the other helper files, by name ("iaud-write": "délka …, hash …").

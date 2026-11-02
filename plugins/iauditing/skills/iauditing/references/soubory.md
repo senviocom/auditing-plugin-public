@@ -72,7 +72,7 @@ the auditor knows where to look: `Soubory: smlouva-o-dilo.docx, záhlaví`,
 `Soubory: ucetni-zaverka-2025.pdf, s. 2`,
 `Soubory: predvaha-2025.xlsx, list Předvaha, ř. 11`. Take the page, sheet and
 row from the heading above the line (or `where` of a search hit). The
-rest (client check, re-checking "problems", fact or draft, asking the user)
+rest (client check, re-checking "problems", asking the user)
 is the same as in `references/dokumenty.md`.
 
 ## 5. Rules

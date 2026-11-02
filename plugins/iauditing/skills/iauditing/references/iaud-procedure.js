@@ -6,7 +6,7 @@
 (function installProcedure(root) {
   'use strict';
 
-  var VERSION = '0.6.1';
+  var VERSION = '0.7.0';
   var NAME = 'iaud-procedure';
 
   var isModule = typeof module === 'object' && module.exports;
@@ -448,8 +448,6 @@
 
   function czechDate(iso) { return core.displayAnswer('date', String(iso).slice(0, 10)); }
 
-  function plural(n, one, few, many) { return n === 1 ? one : n >= 2 && n <= 4 ? few : many; }
-
   // What the preview shows and the confirmation covers.
   function submitState(ctx, options) {
     var s = { audit: ctx.audit.auditId, procedure: ctx.procedure.procedureId };
@@ -465,15 +463,13 @@
       var brief = function (i) {
         var out = { no: i.no, question: i.question };
         if (i.section) out.section = i.section;
-        if (i.draft && !i.empty) out.source = i.mark.source;
         return out;
       };
       var items = p.items.filter(function (i) { return !i.heading && !i.hidden; });
       s.progress = p.progress;
       s.readOnly = p.readOnly;
       s.unanswered = items.filter(function (i) { return i.empty; }).map(brief);
-      s.drafts = items.filter(function (i) { return !i.empty && i.draft; }).map(brief);
-      s.keys = items.map(function (i) { return [i.questionId, i.sectionId, i.empty, i.draft]; });
+      s.keys = items.map(function (i) { return [i.questionId, i.sectionId, i.empty]; });
       // The app's defaults: the stored values, else today (local date) and the user.
       s.preparedAt = ctx.procedure.preparedAt ? String(ctx.procedure.preparedAt).slice(0, 10) : new Date().toLocaleDateString('sv-SE');
       s.preparedBy = ctx.procedure.preparedBy || s.me;
@@ -514,10 +510,6 @@
       problems.push('Datum přípravy (' + czechDate(s.preparedAt) + ') je po termínu zakázky (' + czechDate(ctx.audit.deadline) +
         '); takové odeslání iAuditing nepřijme.');
     }
-    if (s.drafts.length) {
-      warnings.push(s.drafts.length + ' ' + plural(s.drafts.length, 'odpověď je stále označená', 'odpovědi jsou stále označené',
-        'odpovědí je stále označeno') + ' jako návrh k ověření ([NÁVRH – ověřit]); před odesláním je prosím potvrďte nebo opravte.');
-    }
     var stored = writing.sum(ctx.procedure.components || []);
     if (stored.total && writing.progressText(stored) !== s.progress) {
       warnings.push('Počítadlo postupu v iAuditingu ukazuje ' + writing.progressText(stored) + ', podle odpovědí je to ' + s.progress +
@@ -529,7 +521,7 @@
       perform: function () { return sendSubmit(ctx, s); }, preview: function () {
         var preview = head(ctx, 'submit', SUBMIT_LABEL);
         preview.status = core.procedureStatus(ctx.procedure);
-        ['progress', 'unanswered', 'drafts', 'summary', 'prepared'].forEach(function (k) { preview[k] = s[k]; });
+        ['progress', 'unanswered', 'summary', 'prepared'].forEach(function (k) { preview[k] = s[k]; });
         preview.warnings = warnings;
         return preview;
       } };

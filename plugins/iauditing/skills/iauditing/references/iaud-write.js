@@ -8,7 +8,7 @@
 (function installWrite(root) {
   'use strict';
 
-  var VERSION = '0.6.1';
+  var VERSION = '0.7.0';
   var NAME = 'iaud-write';
 
   var isModule = typeof module === 'object' && module.exports;
@@ -30,19 +30,13 @@
 
   var MAX_FIELD = 16384;
   var MAX_ITEMS = 40;
-  var NL = String.fromCharCode(10);
 
-  // The source line in description (PLAN §4, #17): the tag first, then the
-  // source; a draft the auditor confirmed in chat has no tag (#20). The
-  // core's splitDescription reads it back.
-  var MARKS = { fact: '[FAKT] ', draft: '[NÁVRH – ověřit] ', confirmed: '' };
-  var KIND_LABELS = { fact: 'fakt', draft: 'návrh – ověřit', confirmed: 'potvrzeno auditorem' };
-
+  // Only the answer is written; Popis and Komentář stay exactly as stored.
+  // Sources and what changed go to the chat, not into iAuditing.
   var ACTION_LABELS = {
     created: 'nová odpověď',
     updated: 'přepsání odpovědi',
     cleared: 'vymazání odpovědi',
-    source: 'jen označení zdroje',
     unchanged: 'beze změny',
   };
   var CLEAR_NOTE = 'Odpověď se vymaže. Prázdný řádek odpovědi v iAuditingu zůstane (smazat ho nejde), ' +
@@ -151,11 +145,6 @@
   };
 
   function fail(code, message) { return core.apiError(code, message); }
-
-  function withMark(auditor, line) {
-    if (!line) return auditor;
-    return auditor === '' ? line : auditor + NL + NL + line;
-  }
 
   function oneLine(text) {
     return String(text || '').normalize('NFC').replace(/\s+/g, ' ').trim();
@@ -306,30 +295,11 @@
     var existing = core.findAnswer(at.f.form.answers || [], at.q.questionId, row.sectionId);
     var oldAnswer = existing ? existing.answer || '' : '';
     var oldDescription = existing ? existing.description || '' : '';
-    var split = core.splitDescription(oldDescription);
-    var source = oneLine(item.source);
-    // A confirmation in chat keeps the source already on the line unless given.
-    if (!source && item.kind === 'confirmed' && split.mark) source = oneLine(split.mark.source);
-    if (!clear) {
-      if (!source) return problem('chybí zdroj odpovědi (dokument a strana, rejstřík se stavem k datu, nebo „uživatel v chatu“).');
-      if (!Object.prototype.hasOwnProperty.call(MARKS, item.kind)) {
-        return problem('chybí, jestli jde o fakt ze zdroje, návrh k ověření, nebo návrh, který auditor potvrdil.');
-      }
-      row.kind = item.kind;
-      row.kindLabel = KIND_LABELS[item.kind];
-      row.source = source;
-      row.mark = MARKS[item.kind] + 'Zdroj: ' + source;
-    }
     if (ctx.keys[plan.key]) return problem('otázka je v dávce dvakrát.');
     ctx.keys[plan.key] = true;
-    var description = withMark(split.auditor, clear ? null : row.mark);
     if (stored.length > MAX_FIELD) return problem('odpověď má ' + stored.length + ' znaků, iAuditing jich přijme nejvýš 16 384.');
-    if (description.length > MAX_FIELD) {
-      return problem('popis se zdrojem by měl ' + description.length + ' znaků, iAuditing jich přijme nejvýš 16 384.');
-    }
     var oldBlank = core.isBlank(oldAnswer);
     var action = clear ? (oldBlank ? 'unchanged' : 'cleared') : oldBlank ? 'created' : oldAnswer === stored ? 'unchanged' : 'updated';
-    if (action === 'unchanged' && description !== oldDescription) action = 'source';
     row.action = action;
     row.actionLabel = ACTION_LABELS[action];
     row.overwrite = action === 'updated' || action === 'cleared';
@@ -345,8 +315,6 @@
       row.oldOptions = oldAnswer ? oldAnswer.split(';') : [];
       row.newOptions = stored ? stored.split(';') : [];
     }
-    row.description = options.redact ? core.redacted(description, options) : description;
-    if (oldDescription !== '' && description !== oldDescription) row.oldDescription = options.redact ? core.redacted(oldDescription, options) : oldDescription;
     if (action === 'cleared') row.note = CLEAR_NOTE;
     plan.componentId = at.f.component.componentId;
     plan.answerId = existing ? existing.answerId : null;
@@ -355,9 +323,9 @@
     if (action !== 'unchanged') {
       plan.data = existing
         ? { answerId: existing.answerId, questionId: at.q.questionId, sectionId: row.sectionId, answer: stored,
-          description: description, comment: existing.comment || '' }
+          description: oldDescription, comment: existing.comment || '' }
         : { formId: plan.componentId, questionId: at.q.questionId, sectionId: row.sectionId, answer: stored,
-          description: description, comment: '' };
+          description: '', comment: '' };
     }
     return plan;
   }
@@ -591,8 +559,7 @@
   }
 
   // Saves answers of one procedure as a batch. items: [{questionId, sectionId?,
-  // answer, source, kind: "fact" | "draft" | "confirmed"}]; an empty answer
-  // clears it; "confirmed" without a source keeps the line's source.
+  // answer}]; an empty answer clears it. Popis and Komentář are kept.
   // {dryRun: true} returns the preview with `confirm`; the write itself needs
   // {confirm} from that preview, unused, with every row unchanged since.
   function saveAnswers(engagement, procedure, items, options) {

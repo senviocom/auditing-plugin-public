@@ -13,7 +13,7 @@
 (function install(root) {
   'use strict';
 
-  var VERSION = '0.6.0';
+  var VERSION = '0.6.1';
 
   // The iAuditing version this helper was tested against (PLAN.md §6).
   var TESTED_APP_VERSION = '1.2.6';
@@ -50,8 +50,11 @@
     retryDelayMs: 1500,
   };
 
+  // Never a negative delay: the browser makes it a 32-bit integer before it
+  // treats a negative one as 0, so the first request's "0 + interval - now"
+  // wrapped to about 19 days on some dates and check() hung (Cowork, 2026-11-02).
   function wait(ms) {
-    return new Promise(function (resolve) { setTimeout(resolve, ms); });
+    return new Promise(function (resolve) { setTimeout(resolve, Math.max(0, ms)); });
   }
 
   // Requests queue up, and each waits until minIntervalMs after the one

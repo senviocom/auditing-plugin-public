@@ -3,13 +3,13 @@
 // tool after references/iaud.js and references/iaud-write.js, the first time a
 // task changes a sekce. It extends window.iaud (same version only) and
 // evaluates to "iaud-sections <version> loaded, délka <n>, hash <h>".
-// Same rails as saveAnswers (iaud-write): allowlist → role → procedure in
+// Same rails as saveAnswers (iaud-write): open zakázka → role → procedure in
 // progress → dry run (preview) → the user's "ano" → one write → read back →
 // progress, never repeated. Removing a sekce also deletes its answers (V8 §5).
 (function installSections(root) {
   'use strict';
 
-  var VERSION = '0.7.1';
+  var VERSION = '1.0.0';
   var NAME = 'iaud-sections';
 
   var isModule = typeof module === 'object' && module.exports;

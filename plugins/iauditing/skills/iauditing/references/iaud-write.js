@@ -3,12 +3,12 @@
 // the first time a task needs to change something in iAuditing. It extends
 // window.iaud (same version only) and evaluates to "iaud-write <version>
 // loaded, délka <n>, hash <h>", which the skill compares with SKILL.md.
-// Every write: allowlist → role → dry run (preview) → the user's "ano" →
+// Every write: allowlist (when on) → role → dry run (preview) → the user's "ano" →
 // write → read back → progress, at the core's pace, never repeated (PLAN §5).
 (function installWrite(root) {
   'use strict';
 
-  var VERSION = '0.7.1';
+  var VERSION = '1.0.0';
   var NAME = 'iaud-write';
 
   var isModule = typeof module === 'object' && module.exports;
@@ -21,9 +21,11 @@
   }
   var core = iaud._internal;
 
-  // During development only the test engagement may be written (CLAUDE.md).
-  // Opening the plugin to the user's other engagements is Senvio's decision.
-  var WRITE_ALLOWLIST = [{ auditId: '26d7112b-9bec-44ee-8000-48d150f3b161', client: 'PROBIS Audit a.s.' }];
+  // The switch for which zakázky may be written, as [{auditId, client}].
+  // Empty (as released): not enforced, every zakázka may be written and the
+  // other rails still hold. Filled: only those, e.g. a test zakázka. It is
+  // part of the self-checked code, so changing it takes a release.
+  var WRITE_ALLOWLIST = [];
 
   // Roles that carry audit:procedure:prepare; each inherits the ones below it (V8 §9).
   var PREPARE_ROLES = ['assistant-auditor', 'reviewer', 'audit-manager', 'auditor'];
@@ -151,11 +153,12 @@
   }
 
   function allowed(auditId) {
-    return WRITE_ALLOWLIST.some(function (a) { return a.auditId === auditId; });
+    return !WRITE_ALLOWLIST.length || WRITE_ALLOWLIST.some(function (a) { return a.auditId === auditId; });
   }
 
   // Before any request: an ID or name that can't be on the allowlist is refused.
   function mayBeAllowed(engagement) {
+    if (!WRITE_ALLOWLIST.length) return true;
     var id = String(engagement || '').trim().toLowerCase();
     var name = core.normalizeName(engagement);
     return WRITE_ALLOWLIST.some(function (a) {
@@ -513,9 +516,10 @@
     });
   }
 
-  // The rails of the zakázka (PLAN §5): the allowlist (also before any
-  // request), an active unlocked zakázka, a role that may fill in. Resolves to
-  // {audit}; iaud-files.js uses it for Soubory, which belong to no procedure.
+  // The rails of the zakázka (PLAN §5): the allowlist when it is on (also
+  // before any request), an active unlocked zakázka, a role that may fill in.
+  // Resolves to {audit}; iaud-files.js uses it for Soubory, which belong to
+  // no procedure.
   function openAuditForWrite(engagement) {
     if (!mayBeAllowed(engagement)) return Promise.reject(notAllowed());
     var ctx = {};

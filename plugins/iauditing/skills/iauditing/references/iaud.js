@@ -13,7 +13,7 @@
 (function install(root) {
   'use strict';
 
-  var VERSION = '0.7.1';
+  var VERSION = '1.0.0';
 
   // The iAuditing version this helper was tested against (PLAN.md §6).
   var TESTED_APP_VERSION = '1.2.6';

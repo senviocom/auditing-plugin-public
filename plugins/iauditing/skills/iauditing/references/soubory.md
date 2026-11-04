@@ -87,8 +87,8 @@ is the same as in `references/dokumenty.md`.
 Uploading, attaching, detaching, renaming and deleting a file change
 iAuditing. Do them **only when the user asks** for that file, each change
 with its own preview and an explicit "ano" to it ("nahraj a připoj k otázce
-7" is two previews, two "ano"s). They work only in the zakázky the helper
-allows (for now PROBIS Audit a.s.; `NOT_ALLOWED` otherwise: the user does it
+7" is two previews, two "ano"s). They need an active zakázka and a role
+that may fill in (`NOT_EDITABLE` or `NO_ROLE` otherwise: the user does it
 in the web app). Load `iaud-write.js` and `iaud-filewrite.js` (SKILL.md).
 
 A preview has `ok`, `actionLabel`, `file {name, type, sizeLabel}`,

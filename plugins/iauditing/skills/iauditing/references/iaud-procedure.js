@@ -1,12 +1,12 @@
 // iaud-procedure: actions on a whole procedure: the AI Shrnutí (#29) and
 // submitting for review (#30). Loaded after iaud.js and iaud-write.js (same
 // version); evaluates to "iaud-procedure <version> loaded, délka <n>, hash <h>".
-// Rails as in iaud-write: allowlist → role → in progress → preview → "ano" →
+// Rails as in iaud-write: open zakázka → role → in progress → preview → "ano" →
 // one action → read back, never repeated (PLAN §5).
 (function installProcedure(root) {
   'use strict';
 
-  var VERSION = '0.7.1';
+  var VERSION = '1.0.0';
   var NAME = 'iaud-procedure';
 
   var isModule = typeof module === 'object' && module.exports;

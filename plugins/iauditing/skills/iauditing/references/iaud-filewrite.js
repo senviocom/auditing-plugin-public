@@ -2,7 +2,7 @@
 // it to an answer or detach it, rename or delete it. Claude passes this whole
 // file to the browser's JavaScript tool after iaud.js, iaud-write.js and
 // iaud-files.js; it evaluates to "iaud-filewrite <version> loaded, délka <n>,
-// hash <h>". Every change has the rails of iaud-write (PLAN §5): allowlist →
+// hash <h>". Every change has the rails of iaud-write (PLAN §5): open zakázka →
 // role → preview → the user's "ano" → one write → read back, never repeated.
 // A file to upload never passes through Claude: the page asks iAuditing for an
 // upload URL and Claude's shell sends the file there with curl (uploadFile),
@@ -10,7 +10,7 @@
 (function installFileWrite(root) {
   'use strict';
 
-  var VERSION = '0.7.1';
+  var VERSION = '1.0.0';
   var NAME = 'iaud-filewrite';
 
   var isModule = typeof module === 'object' && module.exports;

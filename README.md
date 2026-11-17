@@ -15,9 +15,11 @@ questionnaire, and the engagement's files.
 4. On the marketplace, turn on **Sync automatically**, so new versions arrive
    by themselves (or use **Check for updates**).
 
-The plugin works in Cowork's built-in browser. Log in to iAuditing in
-Chrome and import the login into the Browser pane; Claude never sees your
-password.
+The plugin works in your own Chrome through the **Claude in Chrome**
+extension: install it from the Chrome Web Store, sign in with the same
+Claude account as Claude Desktop, and keep it enabled in Claude Desktop
+under **Settings → Connectors**. Log in to iAuditing in Chrome as usual;
+Claude never sees your password.
 
 ## What's here
 

@@ -9,7 +9,7 @@
 (function installVz(root) {
   'use strict';
 
-  var VERSION = '1.0.0';
+  var VERSION = '2.0.0';
   var NAME = 'verejne-zdroje';
 
   var isModule = typeof module === 'object' && module.exports;
@@ -856,10 +856,10 @@
 
   var LISTS = {
     eu: { host: 'webgate.ec.europa.eu', label: EU_LABEL, source: 'sankční seznam EU', load: loadEu,
-      open: 'Otevřete prosím v panelu Prohlížeč adresu https://webgate.ec.europa.eu/fsd/fsf/public/files/ ' +
+      open: 'Otevřete prosím v nové záložce adresu https://webgate.ec.europa.eu/fsd/fsf/public/files/ ' +
         '(stačí i stránka s chybou) a zkuste to znovu.' },
     mzv: { host: 'mzv.gov.cz', label: MZV_LABEL, source: 'vnitrostátní sankční seznam ČR (MZV)', load: loadMzv,
-      open: 'Otevřete prosím v panelu Prohlížeč stránku https://mzv.gov.cz/jnp/cz/o_ministerstvu/otevrena_data/index_5.html a zkuste to znovu.' },
+      open: 'Otevřete prosím v nové záložce stránku https://mzv.gov.cz/jnp/cz/o_ministerstvu/otevrena_data/index_5.html a zkuste to znovu.' },
   };
 
   function hitOf(e, match) {

@@ -9,11 +9,11 @@ evidence the workspace folder doesn't have.
 
 Load `references/iaud-files.js` first (SKILL.md, "Soubory"); for changes
 (§6–9) also `iaud-write.js` and `iaud-filewrite.js`. Reading runs in the
-Browser pane; nothing is saved to the workspace folder.
+iAuditing tab in Chrome; nothing is saved to the workspace folder.
 
 ## 1. List the files
 
-Run `iaud.listFiles('<zakázka>')`. Each file has `name`, `type`, `size` and
+Run `await iaud.listFiles('<zakázka>')`. Each file has `name`, `type`, `size` and
 `sizeLabel`, `uploaded` (YYYY-MM-DD), `readable` and `attachedTo` (a list of
 `{procedure, name, questionId, sectionId}`: the answers it is attached to).
 
@@ -24,7 +24,7 @@ yourself. No files: "V Souborech zakázky zatím nic není."
 
 ## 2. Read a file
 
-Run `iaud.readFile('<zakázka>', '<název souboru>')` (the name may be partial
+Run `await iaud.readFile('<zakázka>', '<název souboru>')` (the name may be partial
 if only one file fits; otherwise `AMBIGUOUS` names the candidates: ask).
 One file at a time, only the ones the task needs.
 
@@ -32,7 +32,7 @@ One file at a time, only the ones the task needs.
   moment and run the same call again; don't start other reads meanwhile.
 - **`more: true`**: the text continues. Read on with
   `{from: result.nextFrom}` only as far as the question needs, or search the
-  file instead: `iaud.findInFile('<zakázka>', '<název>', '<text>')` gives
+  file instead: `await iaud.findInFile('<zakázka>', '<název>', '<text>')` gives
   each hit with its place (`where`).
 - **`needsFolder: true`** (a scan, an image, a PDF whose font has no
   Unicode map, an encrypted PDF, PPTX or ODT): the page can't read it
@@ -113,7 +113,7 @@ look for another way when this one fails.
    most 50 MB (iAuditing's limit). Types: PDF, DOCX, XLSX, PPTX, ODT, PNG,
    JPEG, TIFF, HEIC. iAuditing refuses TXT and CSV uploaded this way: the
    user uploads those in the web app.
-2. Preview `iaud.uploadFile('<zakázka>', {name: '<název>', path: '<cesta>',
+2. Preview `await iaud.uploadFile('<zakázka>', {name: '<název>', path: '<cesta>',
    size: <bajty>, sha256: '<hex>'}, {dryRun: true})`. The name is the
    file's own name unless the user wants another (3–128 characters). Show
    the zakázka, the name, type and size. `BAD_FILE`: tell the user its
@@ -127,7 +127,7 @@ look for another way when this one fails.
    `200`. Don't change it, don't run it twice, and don't show it to the
    user (it is long and technical). With `ok: false` (iAuditing refused
    the upload address) tell the user `message` and stop.
-4. Then always call `iaud.finishUpload('<storageId>', {httpStatus: <the
+4. Then always call `await iaud.finishUpload('<storageId>', {httpStatus: <the
    printed code as a number>})`, also when curl failed or printed nothing
    (pass `0`). With `readBack: 'OK'` the file is in Soubory and its
    downloaded copy is byte for byte the same. With `uploadYourself: true`
@@ -143,7 +143,7 @@ look for another way when this one fails.
 
 Take `questionId` and `sectionId` of the question from `iaud.showProcedure`
 (the user says "otázka 7", maybe in a sekce). Then
-`iaud.attachFile('<zakázka>', '<procedura>', {questionId, sectionId},
+`await iaud.attachFile('<zakázka>', '<procedura>', {questionId, sectionId},
 '<název souboru>', {dryRun: true})`. Show: procedure and question number
 (`question.no`, `question.question`, the sekce), the file, the files already
 attached (`attachments`). With `createsRow: true` the question has no answer
@@ -158,10 +158,10 @@ tab and the view tab").
 
 Only the file the user named, only when they ask for it.
 
-- Rename: `iaud.renameFile('<zakázka>', '<název>', '<nový název>', {dryRun:
+- Rename: `await iaud.renameFile('<zakázka>', '<název>', '<nový název>', {dryRun:
   true})`. Show old → new. The extension stays (`.pdf` stays `.pdf`); a name
   another file has is refused.
-- Delete: `iaud.deleteFile('<zakázka>', '<název>', {dryRun: true})`. Show
+- Delete: `await iaud.deleteFile('<zakázka>', '<název>', {dryRun: true})`. Show
   `warning` as it is ("Vrátit to nejde."). A file attached to answers is
   refused with the procedures it is attached to: offer to detach it first
   (§8, each with its own preview), then preview the deletion again.

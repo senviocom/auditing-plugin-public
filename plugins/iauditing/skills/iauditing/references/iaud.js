@@ -13,10 +13,10 @@
 (function install(root) {
   'use strict';
 
-  var VERSION = '1.0.0';
+  var VERSION = '2.0.0';
 
   // The iAuditing version this helper was tested against (PLAN.md §6).
-  var TESTED_APP_VERSION = '1.2.6';
+  var TESTED_APP_VERSION = '1.4.1';
 
   var ROLE_LABELS = {
     auditor: 'Auditor',
@@ -38,8 +38,8 @@
     approved: 'Schváleno',
   };
 
-  var LOGGED_OUT = 'Nejste přihlášen/a do iAuditingu. Přihlaste se v Chrome a znovu importujte přihlášení ' +
-    'do panelu Prohlížeč (v Claude Desktop: import uložených přihlášení z Chrome).';
+  var LOGGED_OUT = 'Nejste přihlášen/a do iAuditingu. Přihlaste se prosím do iAuditingu v Chrome ' +
+    '(jako obvykle, v kterékoli záložce) a napište „hotovo“.';
 
   var iaud = {
     version: VERSION,
@@ -99,7 +99,7 @@
     return throttle().then(function () {
       return fetch(url).catch(function () {
         throw apiError('NETWORK', 'Nepodařilo se spojit s iAuditingem. Zkontrolujte připojení k internetu. ' +
-          'Pokud jste se mezitím odhlásil/a, přihlaste se v Chrome a znovu importujte přihlášení.');
+          'Pokud jste se mezitím odhlásil/a, přihlaste se do iAuditingu znovu v Chrome.');
       });
     }).then(function (r) {
       if (r.status === 401) throw apiError('LOGGED_OUT', LOGGED_OUT, r.status);
@@ -128,9 +128,18 @@
     return json.data;
   }
 
-  // A read from /api/v2.
+  // A read from /api/v2. A list ("audits/list", ".../procedures/list",
+  // ".../documents/list") comes back as the array itself: up to app 1.2.6 the
+  // reply's data was the array, since 1.4.1 it is wrapped ({audits: [...]},
+  // {procedures: [...]}, {documents: [...]}). Both are accepted.
   function apiGet(path) {
-    return getJson('/api/v2/' + path).then(unwrap);
+    return getJson('/api/v2/' + path).then(unwrap).then(function (data) {
+      var m = /(?:^|[/])([a-z]+)[/]list$/.exec(path);
+      if (!m || Array.isArray(data)) return data;
+      if (data && Array.isArray(data[m[1]])) return data[m[1]];
+      throw apiError('UNEXPECTED', 'iAuditing poslal seznam v podobě, kterou neznám (' + m[1] +
+        '). Raději jsem se zastavil; nic se nezměnilo.');
+    });
   }
 
   // A write (PATCH/POST) to /api/v2, sent like the app: a pre-stringified JSON
@@ -190,7 +199,7 @@
     report.firm = firmOf(hostname);
     if (!report.firm) {
       report.problems.push('Prohlížeč není na stránce iAuditingu vaší firmy (je na ' + (hostname || 'neznámé stránce') +
-        '). Otevřete v panelu Prohlížeč adresu https://<vaše-firma>.iauditing.cz.');
+        '). Otevřete v Chrome adresu https://<vaše-firma>.iauditing.cz.');
       return Promise.resolve(report);
     }
     return apiGet('staff/me/get').then(function (me) {
@@ -462,8 +471,8 @@
     return 'Otevírám proceduru v prohlížeči.';
   }
 
-  // After a change: the address Claude opens in a second tab of the Browser
-  // pane, where a full load shows the saved state. This tab is never reloaded,
+  // After a change: the address Claude opens in a second Chrome tab (the
+  // view tab), where a full load shows the saved state. This tab is never reloaded,
   // so the helpers are sent only once per task (a re-send was what the safety
   // classifier stopped, V3). If this tab shows a form, it goes to the zakázka,
   // so the user doesn't type into old answers.

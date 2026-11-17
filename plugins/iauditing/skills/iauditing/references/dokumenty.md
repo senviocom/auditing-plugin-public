@@ -14,7 +14,7 @@ evidence becomes a question to the user.
 
 ## 1. Read the procedure and sort its questions
 
-Run `iaud.showProcedure('<zakázka>', '<procedura>')`. Leave answered
+Run `await iaud.showProcedure('<zakázka>', '<procedura>')`. Leave answered
 questions alone unless the user asks (then the preview shows old and new).
 
 Sort every open question **now, from its own text**, its `instructions` and
@@ -48,7 +48,7 @@ zkusím najít ve výpisu z rejstříku, u otázek 3 a 4 se vás zeptám."
 Use the **workspace folder** (and the subfolders the user names) and the
 zakázka's **Soubory** in iAuditing. List the files with their type, size and
 number of pages or sheets: the folder with code, Soubory with
-`iaud.listFiles('<zakázka>')` (`references/soubory.md`). Don't search the rest
+`await iaud.listFiles('<zakázka>')` (`references/soubory.md`). Don't search the rest
 of the disk. If the same document is in both, read one and say which. Files
 elsewhere (Google Drive, e-mail) this version doesn't read: ask the user to
 save them into the workspace folder.
@@ -71,7 +71,7 @@ name. These worked exactly on Czech test documents:
 | XLSX | `openpyxl`: every sheet, **also hidden ones** (`sheet_state`), hidden rows and columns (`row_dimensions[r].hidden`, `column_dimensions`), merged headers. `data_only=True` gives values; a formula cell with no saved value reads as empty, so say so instead of guessing. For a big sheet use `read_only=True` and compute sums and counts with code, never by eye. Cite the sheet and row (and column). |
 | DOCX | `python-docx` for paragraphs and tables, **plus the raw XML** in the file: `word/header*.xml` and `footer*.xml` (contract numbers often sit there), tracked changes (`w:ins`, `w:del`), hidden text (`w:vanish`) and `word/comments.xml`. Tell the user about tracked changes or hidden text: the visible text may not be what was signed. |
 | Image (JPG, PNG) | Read it yourself. |
-| A file in **Soubory** | `iaud.readFile('<zakázka>', '<název>')` in the Browser pane (DOCX, XLSX, PDF with text, TXT/CSV), `iaud.findInFile` for big ones; see `references/soubory.md`. With `needsFolder` (a scan, an image, an unusual PDF) ask the user to save it into the workspace folder, then read it from there as above. |
+| A file in **Soubory** | `await iaud.readFile('<zakázka>', '<název>')` in the iAuditing tab (DOCX, XLSX, PDF with text, TXT/CSV), `iaud.findInFile` for big ones; see `references/soubory.md`. With `needsFolder` (a scan, an image, an unusual PDF) ask the user to save it into the workspace folder, then read it from there as above. |
 | Anything else (DOC, XLS, MSG, ZIP, …) | Say you can't read it reliably and ask for a PDF, DOCX or XLSX. |
 
 If a library is missing, DOCX and XLSX are ZIP files of XML: read them with

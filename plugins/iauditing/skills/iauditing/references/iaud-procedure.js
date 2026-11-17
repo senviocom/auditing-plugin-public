@@ -6,7 +6,7 @@
 (function installProcedure(root) {
   'use strict';
 
-  var VERSION = '1.0.0';
+  var VERSION = '2.0.0';
   var NAME = 'iaud-procedure';
 
   var isModule = typeof module === 'object' && module.exports;
@@ -184,8 +184,8 @@
     }).then(function (r) {
       var type = r.headers.get('content-type') || '';
       if (r.status === 401 || (r.redirected && type.indexOf('html') !== -1)) {
-        throw fail('LOGGED_OUT', 'Nejste přihlášen/a do iAuditingu. Přihlaste se v Chrome a znovu importujte přihlášení ' +
-          'do panelu Prohlížeč (v Claude Desktop: import uložených přihlášení z Chrome).');
+        throw fail('LOGGED_OUT', 'Nejste přihlášen/a do iAuditingu. Přihlaste se prosím do iAuditingu v Chrome ' +
+          '(jako obvykle, v kterékoli záložce) a napište „hotovo“.');
       }
       if (type.indexOf('application/json') !== -1) {
         return r.json().catch(function () { return {}; }).then(function (j) {

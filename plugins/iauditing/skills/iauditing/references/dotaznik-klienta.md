@@ -11,9 +11,9 @@ from firm to firm. The plugin ships no question texts.
 
 ## Preparing the questionnaire
 
-1. **Zakázka.** As for the overview: `iaud.listProcedures('<zakázka>')`
+1. **Zakázka.** As for the overview: `await iaud.listProcedures('<zakázka>')`
    (same `AMBIGUOUS` / `NOT_FOUND` handling). Use its procedure numbers and
-   names for the next step. Don't open the zakázka in the pane for this.
+   names for the next step. Don't open the zakázka in the browser for this.
 
 2. **Pick the procedures where the client is the source.** Choose by the
    procedure's name and topic, from this zakázka's own list:
@@ -34,7 +34,7 @@ from firm to firm. The plugin ships no question texts.
    zakázka's own procedure names, and say which procedures you picked. Skip
    a procedure marked `webOnly` and say so. Read at most 15 procedures at once.
 
-3. **Read them:** `iaud.listQuestions('<zakázka>', ['<číslo>', '<číslo>', …])`. It
+3. **Read them:** `await iaud.listQuestions('<zakázka>', ['<číslo>', '<číslo>', …])`. It
    returns `{client, year, procedures: [{number, name, items, readOnly?}]}`.
    An item is a heading (`heading`) or a question with `ref` (e.g. `"103/21"`,
    or `"180/2 (Tržby, sekce 546)"` in a sekce), `question`, `type`, `options`,

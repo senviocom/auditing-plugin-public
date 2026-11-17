@@ -14,7 +14,7 @@ plugin: the firm's template is theirs.
 
 ## 1. Read the procedure you are preparing
 
-Run `iaud.showProcedure('<zakázka>', '<procedura>')` as in "Showing one
+Run `await iaud.showProcedure('<zakázka>', '<procedura>')` as in "Showing one
 procedure". Note each question's text, `instructions`, the headings above
 it and whether it is already answered. Don't propose a new answer for an
 answered question unless the user asks; then the preview shows old and new.
@@ -26,7 +26,7 @@ Decide it now, from this zakázka's own texts. There is no ready-made map.
 - **Named procedures first:** a question, hint or heading that names a
   procedure ("viz procedura 120", "dle 150") or quotes its title.
 - **Then by topic:** match what the question asks about against the
-  procedure names from `iaud.listProcedures('<zakázka>')`, e.g. a question
+  procedure names from `await iaud.listProcedures('<zakázka>')`, e.g. a question
   on materiality → the procedure about materiality, a question whether all
   risks were answered → the risk procedures. Take only the ones the
   question really needs.
@@ -43,7 +43,7 @@ read is for the question at hand, on the user's request.
 
 ## 3. Read their answers
 
-`iaud.readAnswers('<zakázka>', ['<číslo>', '<číslo>'])` reads them one
+`await iaud.readAnswers('<zakázka>', ['<číslo>', '<číslo>'])` reads them one
 after the other at a human pace. It returns `{client, year, procedures}`;
 each procedure has `number`, `name`, `status`, `progress`, the counts
 `answered` and `empty`, possibly `readOnly`, and `items`. An item

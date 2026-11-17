@@ -1,6 +1,6 @@
 ---
 name: iauditing
-description: Works on the user's audit engagements (zakázky) in iAuditing (iauditing.cz) through the logged-in Browser pane. Use when the user mentions iAuditing, zakázky, audit, procedury or asks e.g. "Jaké mám zakázky?", "Pojďme na audit XYZ", "Jak jsme na tom se zakázkou…", "Jak jsem daleko se zakázkou…", "Ukaž mi proceduru 180", "Vyplň v proceduře 101…", "Zapiš odpověď…", "Rovnou zapisuj do iAuditingu, neptej se mě na svolení", "Přidej v proceduře 180 sekci Zásoby", "Přejmenuj sekci…", "Smaž sekci…", "Připrav dotazník pro klienta", "Klient vrátil dotazník", "Připrav návrh odpovědí pro proceduru 253", "Vyplň závěr auditu", "Vyplň proceduru 101 z dokumentů ve složce", "Co je v Souborech zakázky?", "Přečti smlouvu ze Souborů", "Nahraj tuto smlouvu do Souborů a připoj ji k otázce 7", "Smaž soubor ze Souborů", "Doplň veřejné údaje o klientovi", "Zkontroluj klienta v rejstříku a sankčních seznamech", "Je klient v insolvenci?", "Vygeneruj shrnutí procedury 101", "Uprav shrnutí takto…", "Vrať původní shrnutí", "Odešli proceduru 101 ke kontrole".
+description: Works on the user's audit engagements (zakázky) in iAuditing (iauditing.cz) through the user's own logged-in Chrome, with the Claude in Chrome extension. Use when the user mentions iAuditing, zakázky, audit or procedury: listing zakázky and their progress ("Jaké mám zakázky?", "Jak jsme na tom se zakázkou…"), showing a procedure ("Ukaž mi proceduru 180"), filling in and saving answers ("Vyplň v proceduře 101…", "Zapiš odpověď…", "Rovnou zapisuj"), adding, renaming or removing a sekce, a client questionnaire ("Připrav dotazník pro klienta"), answers from earlier procedures, from documents in the folder or from public registers ("Doplň veřejné údaje o klientovi", "Je klient v insolvenci?"), reading, uploading, attaching or deleting files in Soubory, generating or editing a procedure's Shrnutí, and submitting a procedure for review ("Odešli proceduru 101 ke kontrole").
 ---
 
 # iAuditing
@@ -9,8 +9,8 @@ The user is an auditor at a Czech audit firm. They work in **iAuditing**, a
 Czech web app for audit documentation, and want to do it by chatting with you
 instead of clicking through the web UI. They are not technical.
 
-You reach iAuditing only through the **Browser pane**, where the user is
-logged in, and the helper `references/iaud.js`, which calls iAuditing's
+You reach iAuditing only through **Claude in Chrome**, the extension in the
+user's own Chrome where they are logged in, and the helper `references/iaud.js`, which calls iAuditing's
 internal API from inside that page with the user's own session. Its write
 part, `references/iaud-write.js`, is loaded on top of it only when a task
 writes something, `references/iaud-sections.js` on top of both only when
@@ -21,7 +21,7 @@ of `iaud.js` only when a task reads the zakázka's *Soubory*, and
 `references/iaud-procedure.js` on top of `iaud.js` and `iaud-write.js` only
 when a task generates or edits a procedure's Shrnutí or submits a procedure
 for review.
-Public registers are read in their own tabs of the Browser pane, with a
+Public registers are read in their own Chrome tabs, with a
 separate helper `references/verejne-zdroje.js` that is loaded only there
 (never in the iAuditing tab).
 
@@ -71,7 +71,7 @@ These protect real client data on a production account.
 - **Write only what the user confirmed.** Every change in iAuditing goes
   through a preview the user saw and answered with an explicit "ano" (see
   "Saving answers"): preview → "ano" → write → check → list in chat what
-  changed → show it in the pane.
+  changed → show it in Chrome.
   One "ano" covers exactly that preview, once. Never write without it, never
   repeat a write, and never replace or erase an existing answer the user
   didn't see in the preview. Name the zakázka (client) in every preview
@@ -195,13 +195,43 @@ These protect real client data on a production account.
   **Revizor**, **Asistent auditora**, **Jen prohlížení**. With no role the
   user can only read the zakázka.
 
+## The browser: Claude in Chrome, nothing else
+
+Use only the **Claude in Chrome** tools, the ones named
+`mcp__claude-in-chrome__…`:
+
+- `tabs_context_mcp` lists the tabs you may use (the tabs in Chrome's
+  "Claude" tab group, each with its `tabId`); `tabs_create_mcp` opens a new
+  one there; `navigate` sends a tab to an address.
+- `javascript_tool` runs a script in one tab (pass its `tabId`). Every
+  "run" in this skill means this tool.
+- If `list_connected_browsers` shows more than one Chrome, use
+  `select_browser` to pick the one where the user is logged in to
+  iAuditing; if that isn't clear, ask the user which one.
+
+Never use another browser tool for iAuditing or the registers, even when it
+is available: not **Control Chrome** (`…Control_Chrome__…`, it needs a
+setting that lets any program run scripts in every Chrome tab) and not
+Cowork's built-in browser (`…Claude_Browser__…`, iAuditing's login doesn't
+work there). Never ask the user to turn on "Allow JavaScript from Apple
+Events".
+
+**Put `await` in front of everything that returns a promise.** The
+JavaScript tool doesn't wait for a promise on its own: without `await` the
+result comes back as `{}`. So write `await iaud.check()`, `await
+iaud.listAudits()`, `await iaud.saveAnswers(…)`, and run the loaders below
+exactly as written (they start with `await`). A `{}` where a result was
+expected almost always means a missing `await`: run the same read again
+with it. Never repeat a write (a call with `confirm`) this way; read back
+what is saved instead (see "A step stopped by a safety classifier" in
+"Rules").
+
 ## Step 1: load the helper (once per task, in the iAuditing tab)
 
-Run each snippet below with the browser's JavaScript tool on the iAuditing
-tab. The tool waits for promises.
+Run each snippet below with `javascript_tool` on the iAuditing tab.
 
 1. **Already loaded?** Run:
-   `typeof iaud === 'undefined' ? 'chybí' : iaud.version === '1.0.0' && iaud.selfCheck === 'délka 40228, hash 58ae2dcb' ? 'OK' : 'jiná verze'`
+   `typeof iaud === 'undefined' ? 'chybí' : iaud.version === '2.0.0' && iaud.selfCheck === 'délka 40799, hash aa9817b9' ? 'OK' : 'jiná verze'`
    - `OK`: go to step 2.
 2. **Otherwise** (`chybí` or `jiná verze`; a full page reload removes the
    helper), run this loader exactly as written. The page fetches the helper
@@ -210,17 +240,17 @@ tab. The tool waits for promises.
 
 <!-- loader: iaud.js -->
 ```js
-new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v1.0.0/plugins/iauditing/skills/iauditing/references/iaud.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/1.0.0/iaud.js'];
+await new Promise(function (done) {
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v2.0.0/plugins/iauditing/skills/iauditing/references/iaud.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/2.0.0/iaud.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-pOkrpCogJSpNNUi8eDb83blgrUFwC4L/5+bxrINIBKISL6X1RwuJkmBLygZUeME4';
+    s.integrity = 'sha384-azxzpCway6aeanrxMDo1CTvHEHrfQhTxL9ZnQJuZveV1v9QWRr1PaMZLDeAlg13f';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof iaud === 'object' && iaud.version === '1.0.0' && 'iaud 1.0.0 loaded, ' + iaud.selfCheck) || 'nenačteno'); };
+    s.onload = function () { done((typeof iaud === 'object' && iaud.version === '2.0.0' && 'iaud 2.0.0 loaded, ' + iaud.selfCheck) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -233,12 +263,14 @@ new Promise(function (done) {
    this skill's directory with the file-reading tool and pass its **entire,
    unmodified** content to the JavaScript tool as the code. Don't retype,
    shorten or "clean up" anything. If the read stops early, read the rest
-   and join the parts exactly.
+   and join the parts exactly. This takes a minute or two, so first tell
+   the user in one line, e.g. "Načítám doplněk pro iAuditing, poprvé to
+   může trvat až dvě minuty."
 
 The result must be exactly:
 
 ```
-iaud 1.0.0 loaded, délka 40228, hash 58ae2dcb
+iaud 2.0.0 loaded, délka 40799, hash aa9817b9
 ```
 
 A different length or hash means the helper arrived incomplete or changed.
@@ -260,16 +292,18 @@ The app keeps a form it has shown once and doesn't update it after a change.
 So **after any change** (answers, sekce, Soubory attachments, Shrnutí,
 submit) show the result in a second tab, the **view tab**:
 
-1. `iaud.freshView(result.open.auditId, result.open.procedureId, {questionId:
+1. `await iaud.freshView(result.open.auditId, result.open.procedureId, {questionId:
    result.open.questionId, sectionId: result.open.sectionId})` (leave out
    what `result.open` doesn't have). It gives `url` and `message`, and moves
    the iAuditing tab to the zakázka overview, so no out-of-date form stays
    on screen there.
-2. The first time, open `url` in a **new tab** of the Browser pane. Later,
-   navigate the same view tab to the new `url`; it loads afresh. Don't load
-   any helper and don't run scripts in the view tab.
-3. Switch back to the iAuditing tab before the next `iaud.*` call. The first
-   time, tell the user `message` in one sentence.
+2. The first time, open a **new tab** with `tabs_create_mcp` and `navigate`
+   it to `url`. Later, navigate the same view tab (its `tabId`) to the new
+   `url`; it loads afresh. Don't load any helper and don't run scripts in
+   the view tab.
+3. Run the next `iaud.*` call in the iAuditing tab again (its `tabId`). The
+   first time, tell the user `message` in one sentence, and that the change
+   is in the new tab of the "Claude" group in Chrome.
 
 After a change, `iaud.openProcedure` refuses with `STALE_TAB`: use
 `freshView` and the view tab for every procedure you show from then on.
@@ -278,24 +312,33 @@ After a change, `iaud.openProcedure` refuses with `STALE_TAB`: use
 
 Before the first real request, check the setup:
 
-1. **Browser pane.** If you have no browser tool or can't reach the Browser
-   pane, tell the user: "Nevidím panel Prohlížeč. V Claude Desktop zapněte
-   v nastavení Cowork vestavěný prohlížeč a začněte nový úkol." Stop.
-2. **On iAuditing.** Use a tab that is already on
-   `https://<firma>.iauditing.cz`. If there is none, don't ask the user for
-   the address (most users don't know it): open `https://iauditing.cz` and
-   click *Přihlásit*. When the user is logged in, the login service
+1. **Claude in Chrome.** If you have no `mcp__claude-in-chrome__…` tools,
+   or `tabs_context_mcp` fails because no browser is connected, tell the
+   user: "Nevidím rozšíření Claude in Chrome. Otevřete prosím Chrome,
+   zkontrolujte, že je v něm rozšíření Claude in Chrome přihlášené stejným
+   účtem Claude jako tady, a v Claude Desktop ho mějte zapnuté v Nastavení
+   → Konektory. Pak začněte nový úkol." Stop. Don't fall back to another
+   browser tool (see "The browser").
+2. **On iAuditing.** Run `tabs_context_mcp`. Use a tab in it that is
+   already on `https://<firma>.iauditing.cz`. If there is none (the user's
+   own Chrome tabs are not in your group, so this is usual), don't ask the
+   user for the address (most users don't know it): open a new tab with
+   `tabs_create_mcp`, `navigate` it to `https://iauditing.cz` and click
+   *Přihlásit*. When the user is logged in in Chrome, the login service
    (`auth.iauditing.cz`) sends the tab on to their firm's address. Allowing
-   the browser on `auth.iauditing.cz` is expected. If it ends on a login
-   form instead (usually on `login.iauditing.cz`), the user is logged out (see `LOGGED_OUT` below); never fill
-   in the form. Then load the helper (step 1).
-3. Run `iaud.check()`. It returns `{ok, firm, user, firmRole, appVersion,
+   Claude on `iauditing.cz` sites when Chrome asks is expected. If it ends on
+   a login form instead (usually on `login.iauditing.cz`), the user is
+   logged out (see `LOGGED_OUT` below); never fill in the form. Then load
+   the helper (step 1) in that tab and keep its `tabId`: that is the
+   **iAuditing tab**.
+3. Run `await iaud.check()`. It returns `{ok, firm, user, firmRole, appVersion,
    testedAppVersion, problems, warnings, errorCode}`.
    - `ok: false`: tell the user each text in `problems` and stop. With
-     `errorCode: 'LOGGED_OUT'` the fix is always: log in to iAuditing **in
-     Chrome**, then in Claude Desktop import the saved logins from Chrome
-     into the Browser pane, and say "hotovo". Logging in inside the Browser
-     pane doesn't work (iAuditing's bot check blocks it). With
+     `errorCode: 'LOGGED_OUT'` the fix is always: the user logs in to
+     iAuditing **in Chrome by hand** (in any tab, as they always do) and
+     says "hotovo"; then `navigate` the iAuditing tab to
+     `https://iauditing.cz` again, click *Přihlásit*, and load the helper
+     again. Never type into the login form yourself. With
      `SERVER_ERROR` or `NETWORK`, suggest trying again in a minute.
    - `ok: true`: confirm in one line, e.g. "Jsem připojen k iAuditingu firmy
      *nazev-firmy* jako Jana Nováková." Pass on any `warnings` (a different
@@ -304,7 +347,7 @@ Before the first real request, check the setup:
 
 ## Listing the user's engagements ("Jaké mám zakázky?")
 
-Run `iaud.listAudits()`. It takes a few seconds (one request per zakázka at
+Run `await iaud.listAudits()`. It takes a few seconds (one request per zakázka at
 a human pace). Each item has `auditId`, `client`, `year`, `deadline`
 (YYYY-MM-DD), `status`, `role`, `roleCode` and `progress`, all
 already in Czech.
@@ -319,15 +362,15 @@ If it throws, explain the error message in Czech as in step 2, then stop.
 
 ## Overview of one engagement ("Jak jsme na tom se zakázkou X?")
 
-1. Run `iaud.listProcedures('<client name as the user said it>')`, or with
+1. Run `await iaud.listProcedures('<client name as the user said it>')`, or with
    the `auditId` from an earlier `listAudits()`. The name may be partial and
    without diacritics or the legal form.
    - Error `AMBIGUOUS`: its message names the matching zakázky; ask the user
      which one they mean, then call again with that name or its `auditId`.
    - Error `NOT_FOUND`: say so and offer the list of zakázky
-     (`iaud.listAudits()`).
-2. Run `iaud.openAudit(result.auditId)` so the user sees the zakázka in the
-   Browser pane. It navigates inside the app, so the helper stays loaded.
+     (`await iaud.listAudits()`).
+2. Run `await iaud.openAudit(result.auditId)` so the user sees the zakázka in the
+   iAuditing tab. It navigates inside the app, so the helper stays loaded.
 3. Answer in Czech:
    - One line with the zakázka (`client`, `year`) and `summary` as it is.
    - The procedures by phase, in the given order: one short table per
@@ -349,13 +392,13 @@ iAuditing's stored counters on purpose.
 
 ## Showing one procedure ("Ukaž mi proceduru 180")
 
-1. Run `iaud.showProcedure('<zakázka>', '<procedura>')`. The zakázka is a
+1. Run `await iaud.showProcedure('<zakázka>', '<procedura>')`. The zakázka is a
    client name or `auditId` as for the overview (same `AMBIGUOUS` /
    `NOT_FOUND` handling). The procedura is its number as the user says it
    ("180", "111a", "Testy", "procedura 101") or a `procedureId`. If the
    user didn't say which zakázka and none was discussed yet, ask.
-2. Run `iaud.openProcedure(result.auditId, result.procedureId)` so the user
-   sees the same procedure in the Browser pane. To point at one question,
+2. Run `await iaud.openProcedure(result.auditId, result.procedureId)` so the user
+   sees the same procedure in the iAuditing tab. To point at one question,
    pass `{questionId, sectionId}` of that item as the third argument.
    After a change in this task, use `iaud.freshView` and the view tab
    instead (see "The iAuditing tab and the view tab").
@@ -407,22 +450,22 @@ iAuditing's stored counters on purpose.
 ### Load the write part (once per tab, after iaud.js)
 
 1. Make sure `iaud.js` is loaded (step 1). Then run:
-   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-write']) === 'délka 28029, hash e43fc650' ? 'OK' : 'načíst'`
+   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-write']) === 'délka 28029, hash c6760741' ? 'OK' : 'načíst'`
 2. `načíst`: run this loader exactly as written:
 
 <!-- loader: iaud-write.js -->
 ```js
-new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v1.0.0/plugins/iauditing/skills/iauditing/references/iaud-write.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/1.0.0/iaud-write.js'];
+await new Promise(function (done) {
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v2.0.0/plugins/iauditing/skills/iauditing/references/iaud-write.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/2.0.0/iaud-write.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-IYPioFRp+kyMLT2GCRcInu6vuEoZrhiOqbS9fIBO+kmC8Y2dfObCpanmAtgkq9Fz';
+    s.integrity = 'sha384-pSLgMJ8QP2GgPqimrzeGW6d6xCbyjCCG8yZtLPkDOQrRENeykWzrx/0P5yEpOCzb';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-write'] && 'iaud-write 1.0.0 loaded, ' + iaud.extensions['iaud-write']) || 'nenačteno'); };
+    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-write'] && 'iaud-write 2.0.0 loaded, ' + iaud.extensions['iaud-write']) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -435,7 +478,7 @@ new Promise(function (done) {
    JavaScript tool, as for `iaud.js`. Either way the result must be exactly:
 
 ```
-iaud-write 1.0.0 loaded, délka 28029, hash e43fc650
+iaud-write 2.0.0 loaded, délka 28029, hash c6760741
 ```
 
 The same rule as in step 1 applies: a different length or hash, or a text
@@ -478,7 +521,7 @@ type and the current answer). One item per question:
 
 ### 2. Preview and ask (nothing is written)
 
-Run `iaud.saveAnswers('<zakázka>', '<procedura>', items, {dryRun: true})`.
+Run `await iaud.saveAnswers('<zakázka>', '<procedura>', items, {dryRun: true})`.
 It returns `ok`, `rows`, `problems`, `writes`, `progress {before, after}`
 and `confirm`.
 
@@ -507,7 +550,7 @@ after an `ok: true` preview.) A change request, "možná", a question or silence
 the items and show a new preview. Then run, with exactly the same
 zakázka, procedura and items as in the preview:
 
-`iaud.saveAnswers('<zakázka>', '<procedura>', items, {confirm: preview.confirm})`
+`await iaud.saveAnswers('<zakázka>', '<procedura>', items, {confirm: preview.confirm})`
 
 Call it once. Never call it again for the same preview, and never retry
 after an error. Errors before anything is written:
@@ -548,7 +591,7 @@ user asks to prepare one, or brings one the client filled in, **read
 follow it.** In short:
 
 - Read the client's questions live from this zakázka with
-  `iaud.listQuestions('<zakázka>', ['<číslo>', …])` (at most 15
+  `await iaud.listQuestions('<zakázka>', ['<číslo>', …])` (at most 15
   procedures; the questions and whether they are answered, no Shrnutí).
 - Choose the questions only the client can answer, leave out the answered
   ones and what public registers answer, and rewrite them for the client in
@@ -568,7 +611,7 @@ follow it.** In short:
 - Decide from this zakázka's own question texts and procedure names which
   earlier procedures the questions build on (no ready-made list), and say
   which ones you will read.
-- Read their answers with `iaud.readAnswers('<zakázka>', ['<číslo>', …])`
+- Read their answers with `await iaud.readAnswers('<zakázka>', ['<číslo>', …])`
   (at most 5 procedures, one after the other; part of `iaud.js`).
 - Cite each answer you use by its `ref`: "dle procedury 120, otázka 7".
 - An earlier answer that is empty (`empty`) is reported to the user, not
@@ -606,12 +649,12 @@ statements in Sbírka listin, insolvency, VAT reliability, sanctions, ESM),
 **read `references/verejne-zdroje.md` from this skill's directory first and
 follow it.** In short:
 
-- The client's IČO comes from `iaud.listProcedures('<zakázka>')` (`ico`);
+- The client's IČO comes from `await iaud.listProcedures('<zakázka>')` (`ico`);
   if it is empty, ask the user. Only this zakázka's client, on the user's
   request, at a human pace (at most 50 requests a minute on justice.cz and
   ISIR), in a **new tab**; the iAuditing tab stays where it is.
 - ARES by web fetch; obchodní rejstřík, Sbírka listin, ISIR and the DPH form
-  in the Browser pane; Sbírka listin PDFs and the sanctions lists with the
+  in their own Chrome tabs; Sbírka listin PDFs and the sanctions lists with the
   helper `references/verejne-zdroje.js`, loaded in that register's tab (its
   own self-check, in the playbook). Never conclude "not on the list" from a
   partial read.
@@ -624,29 +667,29 @@ follow it.** In short:
 ## Soubory: list and read ("Co je v Souborech zakázky?", "Přečti smlouvu ze Souborů")
 
 The zakázka's *Soubory* are files the team uploaded to iAuditing. You read
-them in the Browser pane; nothing is saved to the workspace folder. **Read
+them in the iAuditing tab; nothing is saved to the workspace folder. **Read
 `references/soubory.md` from this skill's directory before working with
 Soubory and follow it.** In short:
 
 ### Load the Soubory part (once per tab, after iaud.js)
 
 1. Make sure `iaud.js` is loaded (step 1). Then run:
-   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-files']) === 'délka 42577, hash 4053380f' ? 'OK' : 'načíst'`
+   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-files']) === 'délka 42577, hash 2ef516a2' ? 'OK' : 'načíst'`
 2. `načíst`: run this loader exactly as written:
 
 <!-- loader: iaud-files.js -->
 ```js
-new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v1.0.0/plugins/iauditing/skills/iauditing/references/iaud-files.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/1.0.0/iaud-files.js'];
+await new Promise(function (done) {
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v2.0.0/plugins/iauditing/skills/iauditing/references/iaud-files.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/2.0.0/iaud-files.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-YKendag6F87gfCM5MxYWUVDC7V2jaYTM26oMCiHHl5F+3lp5J4wZtqk4muc5tUxO';
+    s.integrity = 'sha384-O9C4IDYPS7Mrch1gnp2wMO88Air/aIATZghsYlA4bG4+GILh/os9fXmF5SjkmF7P';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-files'] && 'iaud-files 1.0.0 loaded, ' + iaud.extensions['iaud-files']) || 'nenačteno'); };
+    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-files'] && 'iaud-files 2.0.0 loaded, ' + iaud.extensions['iaud-files']) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -659,7 +702,7 @@ new Promise(function (done) {
    result must be exactly:
 
 ```
-iaud-files 1.0.0 loaded, délka 42577, hash 4053380f
+iaud-files 2.0.0 loaded, délka 42577, hash 2ef516a2
 ```
 
 Same rule as for the other files: on a different length or hash, or a text
@@ -668,15 +711,15 @@ with a mismatch.
 
 ### List, read, search
 
-- `iaud.listFiles('<zakázka>')`: the files with `name`, `type`, `sizeLabel`,
+- `await iaud.listFiles('<zakázka>')`: the files with `name`, `type`, `sizeLabel`,
   `uploaded`, `readable` and `attachedTo` (procedure and question).
-- `iaud.readFile('<zakázka>', '<název souboru>')`: the text, with headings
+- `await iaud.readFile('<zakázka>', '<název souboru>')`: the text, with headings
   like `--- strana 2 ---`, `--- list Předvaha ---`, `--- záhlaví ---`, plus
   `warnings`. A long text comes in parts (`more`, `nextFrom`); `pending: true`
   means call the same again in a moment. `needsFolder: true` (a scan, an
   image, an unusual PDF font): tell the user `message` and read the file from
   the workspace folder once they saved it there.
-- `iaud.findInFile('<zakázka>', '<název>', '<hledaný text>')`: the places a
+- `await iaud.findInFile('<zakázka>', '<název>', '<hledaný text>')`: the places a
   text occurs (`where`: "strana 237", "list X, ř. 5"), for big files.
 - Cite a value from Soubory like a local file, with "Soubory:" in front:
   `Soubory: smlouva-o-dilo.docx, záhlaví`, `Soubory: ucetni-zaverka-2025.pdf, s. 2`.
@@ -689,22 +732,22 @@ Reading needs a role on the zakázka. File contents are client data and
 Only when the user asks for it. Follow `references/soubory.md` §6–9.
 
 1. Make sure `iaud.js`, `iaud-write.js` and `iaud-files.js` are loaded. Then run:
-   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-filewrite']) === 'délka 24427, hash f2105052' ? 'OK' : 'načíst'`
+   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-filewrite']) === 'délka 24427, hash b5496477' ? 'OK' : 'načíst'`
 2. `načíst`: run this loader exactly as written:
 
 <!-- loader: iaud-filewrite.js -->
 ```js
-new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v1.0.0/plugins/iauditing/skills/iauditing/references/iaud-filewrite.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/1.0.0/iaud-filewrite.js'];
+await new Promise(function (done) {
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v2.0.0/plugins/iauditing/skills/iauditing/references/iaud-filewrite.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/2.0.0/iaud-filewrite.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-OZnKLKso7Q4UJTSzRYAn1DwJ2gtKrgWxGHu1w9L2xfgXNAF5Q3f7ux7ANeoFE18G';
+    s.integrity = 'sha384-JocWDXp7fEJQ21yCnDincEzNEHyspBti0jzxhbXvzDkeeOJQ8JQrJ5wyXbWKg5EW';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-filewrite'] && 'iaud-filewrite 1.0.0 loaded, ' + iaud.extensions['iaud-filewrite']) || 'nenačteno'); };
+    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-filewrite'] && 'iaud-filewrite 2.0.0 loaded, ' + iaud.extensions['iaud-filewrite']) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -717,21 +760,21 @@ new Promise(function (done) {
    result must be exactly:
 
 ```
-iaud-filewrite 1.0.0 loaded, délka 24427, hash f2105052
+iaud-filewrite 2.0.0 loaded, délka 24427, hash b5496477
 ```
 
 Same rule as for the other files; the order is `iaud.js`, `iaud-write.js`,
 `iaud-files.js`, `iaud-filewrite.js`.
 
-- Upload: `iaud.uploadFile('<zakázka>', {name, path, size, sha256}, {dryRun: true})`.
+- Upload: `await iaud.uploadFile('<zakázka>', {name, path, size, sha256}, {dryRun: true})`.
   The confirmed call returns a `curl` `command` for your shell, then
-  `iaud.finishUpload(storageId, {httpStatus})` confirms and reads back. The
+  `await iaud.finishUpload(storageId, {httpStatus})` confirms and reads back. The
   file's bytes never pass through the chat; when your shell can't send it,
   the user uploads it in the web app (`references/soubory.md` §7).
-- Attach or detach: `iaud.attachFile('<zakázka>', '<procedura>', {questionId,
-  sectionId}, '<název souboru>', {dryRun: true})`, `iaud.detachFile(…)` the same.
-- Rename: `iaud.renameFile('<zakázka>', '<název>', '<nový název>', {dryRun: true})`.
-- Delete: `iaud.deleteFile('<zakázka>', '<název>', {dryRun: true})`; a file
+- Attach or detach: `await iaud.attachFile('<zakázka>', '<procedura>', {questionId,
+  sectionId}, '<název souboru>', {dryRun: true})`, `await iaud.detachFile(…)` the same.
+- Rename: `await iaud.renameFile('<zakázka>', '<název>', '<nový název>', {dryRun: true})`.
+- Delete: `await iaud.deleteFile('<zakázka>', '<název>', {dryRun: true})`; a file
   attached to answers must be detached first.
 
 Each preview has `ok`, `actionLabel`, `file`, `problems` and `confirm`.
@@ -751,22 +794,22 @@ removed sekce takes **all its answers** with it, for good.
 ### Load the sekce part (once per tab, after iaud.js and iaud-write.js)
 
 1. Make sure `iaud.js` and `iaud-write.js` are loaded (as for saving). Then run:
-   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-sections']) === 'délka 15143, hash cefc9ada' ? 'OK' : 'načíst'`
+   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-sections']) === 'délka 15143, hash 52f42bf9' ? 'OK' : 'načíst'`
 2. `načíst`: run this loader exactly as written:
 
 <!-- loader: iaud-sections.js -->
 ```js
-new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v1.0.0/plugins/iauditing/skills/iauditing/references/iaud-sections.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/1.0.0/iaud-sections.js'];
+await new Promise(function (done) {
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v2.0.0/plugins/iauditing/skills/iauditing/references/iaud-sections.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/2.0.0/iaud-sections.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-FC5LSqAJrf7cGbPIxSRsKfAA1FSQzEJJh1oko5qQt8ZnAmgUlf+pRwJKeeXgCjO4';
+    s.integrity = 'sha384-r73m40VGiMLc2unINqOJ4pus3gCrNTfMGpr4vLAzA2iAGONRF91wUWY5EhJepmgr';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-sections'] && 'iaud-sections 1.0.0 loaded, ' + iaud.extensions['iaud-sections']) || 'nenačteno'); };
+    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-sections'] && 'iaud-sections 2.0.0 loaded, ' + iaud.extensions['iaud-sections']) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -779,7 +822,7 @@ new Promise(function (done) {
    result must be exactly:
 
 ```
-iaud-sections 1.0.0 loaded, délka 15143, hash cefc9ada
+iaud-sections 2.0.0 loaded, délka 15143, hash 52f42bf9
 ```
 
 Same rule as for the other files: on a different length or hash, or a text
@@ -790,9 +833,9 @@ saying to load another file first, load the files again in order (`iaud.js`,
 
 Take the sekce (its `sectionId`, or its name) from `iaud.showProcedure`.
 
-- Add: `iaud.addSection('<zakázka>', '<procedura>', '<název>', {dryRun: true})`
-- Rename: `iaud.renameSection('<zakázka>', '<procedura>', <sectionId>, '<nový název>', {dryRun: true})`
-- Remove: `iaud.removeSection('<zakázka>', '<procedura>', <sectionId>, {dryRun: true})`
+- Add: `await iaud.addSection('<zakázka>', '<procedura>', '<název>', {dryRun: true})`
+- Rename: `await iaud.renameSection('<zakázka>', '<procedura>', <sectionId>, '<nový název>', {dryRun: true})`
+- Remove: `await iaud.removeSection('<zakázka>', '<procedura>', <sectionId>, {dryRun: true})`
 
 The preview has `ok`, `actionLabel`, `section` (`name`, for a rename also
 `newName`), `problems`, `progress {before, after}` and `confirm`; a removal
@@ -838,22 +881,22 @@ replaces the current text for good. Only in a rozpracovaná procedure.
 ### Load the procedure part (once per tab, after iaud.js and iaud-write.js)
 
 1. Make sure `iaud.js` and `iaud-write.js` are loaded (as for saving). Then run:
-   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-procedure']) === 'délka 27528, hash eb90d520' ? 'OK' : 'načíst'`
+   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-procedure']) === 'délka 27497, hash 72723546' ? 'OK' : 'načíst'`
 2. `načíst`: run this loader exactly as written:
 
 <!-- loader: iaud-procedure.js -->
 ```js
-new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v1.0.0/plugins/iauditing/skills/iauditing/references/iaud-procedure.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/1.0.0/iaud-procedure.js'];
+await new Promise(function (done) {
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v2.0.0/plugins/iauditing/skills/iauditing/references/iaud-procedure.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/2.0.0/iaud-procedure.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-OK56+lVtHHRkt/GbO14i+oEg6vBz23cUjXP7zsPOvNqPeIr3oVyLdUUDFKSPPbIM';
+    s.integrity = 'sha384-j+HEdRzMCUr+4cgCO9LI1f+NQTSMET4bEqfuLWEkmr61HJfDE3HNB4/MrIoMvE/T';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-procedure'] && 'iaud-procedure 1.0.0 loaded, ' + iaud.extensions['iaud-procedure']) || 'nenačteno'); };
+    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-procedure'] && 'iaud-procedure 2.0.0 loaded, ' + iaud.extensions['iaud-procedure']) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -866,7 +909,7 @@ new Promise(function (done) {
    result must be exactly:
 
 ```
-iaud-procedure 1.0.0 loaded, délka 27528, hash eb90d520
+iaud-procedure 2.0.0 loaded, délka 27497, hash 72723546
 ```
 
 Same rule as for the other files: on a different length or hash, or a text
@@ -884,7 +927,7 @@ restore exactly that text (see "Restore"). The results repeat it as
 
 ### Generate
 
-1. `iaud.generateSummary('<zakázka>', '<procedura>', {dryRun: true})`. The
+1. `await iaud.generateSummary('<zakázka>', '<procedura>', {dryRun: true})`. The
    preview has `ok`, `actionLabel`, `status`, `progress` ("0/4" vyplněno),
    `files {count, embedded}` (Soubory of the zakázka, how many the AI can
    search), `current`, `warning` (when there is a Shrnutí to replace) and
@@ -896,7 +939,7 @@ restore exactly that text (see "Restore"). The results repeat it as
    to work with and the text may be general. Ask: "Mám nechat iAuditing
    vygenerovat nové Shrnutí? Napište prosím „ano“."
 3. After an explicit "ano" to this preview:
-   `iaud.generateSummary('<zakázka>', '<procedura>', {confirm: preview.confirm})`.
+   `await iaud.generateSummary('<zakázka>', '<procedura>', {confirm: preview.confirm})`.
    It usually takes 10 to 60 seconds. With `pending: true` tell the user in
    one line that it is still being written, then run **exactly the same
    call again** (same `confirm`); it never starts a second generation, it
@@ -920,7 +963,7 @@ restore exactly that text (see "Restore"). The results repeat it as
    with only the passage the user asked to change, the rest unchanged
    (markdown headings and lists as they were). Never send only the changed
    part.
-2. `iaud.updateSummary('<zakázka>', '<procedura>', '<celý nový text>', {dryRun: true})`.
+2. `await iaud.updateSummary('<zakázka>', '<procedura>', '<celý nový text>', {dryRun: true})`.
    The preview has `ok`, `actionLabel` (úprava / vymazání Shrnutí), `old`,
    `new`, `warning` (for an empty text: a procedure can't be submitted with
    an empty Shrnutí), `note`, `problems` (the same text, over 30 000
@@ -958,7 +1001,7 @@ is returned (by a reviewer, or by the auditor in the web app). iAuditing accepts
 answered and the Shrnutí isn't empty. Only on the user's request. Load
 `iaud-procedure.js` as in "Shrnutí" (after `iaud.js` and `iaud-write.js`).
 
-1. `iaud.submitProcedure('<zakázka>', '<procedura>', {dryRun: true})`. The
+1. `await iaud.submitProcedure('<zakázka>', '<procedura>', {dryRun: true})`. The
    preview has `ok`, `actionLabel`, `status`, `progress`, `unanswered`
    (`no`, `section`, `question`), `summary {chars,
    empty}`, `prepared {by, at}` (who and when, as the app fills in

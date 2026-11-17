@@ -13,7 +13,7 @@
 (function install(root) {
   'use strict';
 
-  var VERSION = '2.0.0';
+  var VERSION = '2.0.1';
 
   // The iAuditing version this helper was tested against (PLAN.md §6).
   var TESTED_APP_VERSION = '1.4.1';
@@ -476,14 +476,18 @@
   // so the helpers are sent only once per task (a re-send was what the safety
   // classifier stopped, V3). If this tab shows a form, it goes to the zakázka,
   // so the user doesn't type into old answers.
+  // The question to show goes in `questionKey`, not in `url`: Claude in Chrome
+  // refuses to pass on a result holding an address with a query string
+  // ("BLOCKED: Cookie/query string data", 2.0.0 Cowork run).
   function freshView(auditId, procedureId, at) {
     var href = procedureHref(auditId, procedureId, at);
+    var q = href.indexOf('?questionKey=');
     if (currentPath().indexOf('/procedure/') !== -1) clickLink('/audit/' + auditId);
-    return {
-      url: root.location.origin + href,
-      message: 'Uložený stav ukazuji v samostatné kartě s náhledem. Karta, ve které pracuji, ukazuje jen přehled zakázky; ' +
-        'odpovědi v ní se po změně neobnovují.',
-    };
+    var view = { url: root.location.origin + (q === -1 ? href : href.slice(0, q)) };
+    if (q !== -1) view.questionKey = href.slice(q + '?questionKey='.length);
+    view.message = 'Uložený stav ukazuji v samostatné kartě s náhledem. Karta, ve které pracuji, ukazuje jen přehled zakázky; ' +
+      'odpovědi v ní se po změně neobnovují.';
+    return view;
   }
 
   // Question types we know (V9), with a Czech label; title/subtitle are headings.
@@ -892,17 +896,95 @@
     return sum;
   }
 
-  iaud.check = check;
-  iaud.listAudits = listAudits;
-  iaud.listProcedures = listProcedures;
-  iaud.openAudit = openAudit;
-  iaud.openProcedure = openProcedure;
-  iaud.freshView = freshView;
-  iaud.showProcedure = showProcedure;
-  iaud.listQuestions = listQuestions;
-  iaud.readAnswers = readAnswers;
-  iaud.computeProgress = computeProgress;
-  iaud.readOnlyReason = readOnlyReason;
+  // Claude in Chrome's JavaScript tool cuts every text in a result after
+  // 1000 characters and every list after 100 items (VERIFY.md V2, run 4). So
+  // what Claude gets is packed: a longer text becomes {$text: [pieces of at
+  // most TEXT_PIECE characters], $chars}, a longer list {$items: [lists of at
+  // most LIST_PIECE items], $count}, nested as needed. Arguments are unpacked
+  // the same way, so Claude can pass back a packed text (a Shrnutí to
+  // restore) as it got it.
+  var TEXT_PIECE = 900;
+  var LIST_PIECE = 100;
+
+  function isPlain(v) {
+    return v !== null && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype;
+  }
+
+  function pieces(text) {
+    var out = [];
+    var at = 0;
+    while (at < text.length) {
+      var end = Math.min(at + TEXT_PIECE, text.length);
+      // Never between the two halves of a surrogate pair.
+      var c = text.charCodeAt(end - 1);
+      if (end < text.length && c >= 0xd800 && c <= 0xdbff) end--;
+      out.push(text.slice(at, end));
+      at = end;
+    }
+    return out;
+  }
+
+  function packList(list) {
+    if (list.length <= LIST_PIECE) return list;
+    var groups = [];
+    for (var i = 0; i < list.length; i += LIST_PIECE) groups.push(list.slice(i, i + LIST_PIECE));
+    return { $items: packList(groups), $count: list.length };
+  }
+
+  function pack(v) {
+    if (typeof v === 'string') return v.length > TEXT_PIECE ? { $text: packList(pieces(v)), $chars: v.length } : v;
+    if (Array.isArray(v)) return packList(v.map(pack));
+    if (isPlain(v)) {
+      var o = {};
+      Object.keys(v).forEach(function (k) { o[k] = pack(v[k]); });
+      return o;
+    }
+    return v;
+  }
+
+  function isPackedList(v) {
+    return isPlain(v) && typeof v.$count === 'number' && (Array.isArray(v.$items) || isPackedList(v.$items));
+  }
+
+  function unpackList(v) {
+    if (!isPackedList(v)) return v;
+    var all = [];
+    unpackList(v.$items).forEach(function (g) { Array.prototype.push.apply(all, g); });
+    return all;
+  }
+
+  function unpack(v) {
+    if (isPlain(v) && typeof v.$chars === 'number' && v.$text) return unpackList(v.$text).join('');
+    if (isPackedList(v)) return unpackList(v).map(unpack);
+    if (Array.isArray(v)) return v.map(unpack);
+    if (isPlain(v)) {
+      var o = {};
+      Object.keys(v).forEach(function (k) { o[k] = unpack(v[k]); });
+      return o;
+    }
+    return v;
+  }
+
+  // Each function Claude calls, with packed results and unpacked arguments.
+  // The helper files call each other through iaud._internal, unpacked.
+  function publish(name, fn) {
+    iaud[name] = function () {
+      var r = fn.apply(null, Array.prototype.slice.call(arguments).map(unpack));
+      return r && typeof r.then === 'function' ? r.then(pack) : pack(r);
+    };
+  }
+
+  publish('check', check);
+  publish('listAudits', listAudits);
+  publish('listProcedures', listProcedures);
+  publish('openAudit', openAudit);
+  publish('openProcedure', openProcedure);
+  publish('freshView', freshView);
+  publish('showProcedure', showProcedure);
+  publish('listQuestions', listQuestions);
+  publish('readAnswers', readAnswers);
+  publish('computeProgress', computeProgress);
+  publish('readOnlyReason', readOnlyReason);
 
   // For the other helper files (iaud-write.js), which check iaud.version
   // first. Not for Claude: the skill calls only the functions above.
@@ -913,7 +995,7 @@
     showForm: showForm, layoutForm: layoutForm, computeProgress: computeProgress, readOnlyReason: readOnlyReason,
     isBlank: isBlank, isHeading: isHeading, findAnswer: findAnswer, itemKey: itemKey, displayAnswer: displayAnswer,
     redacted: redacted, fnv1a: fnv1a, TYPE_LABELS: TYPE_LABELS,
-    markChanged: markChanged,
+    markChanged: markChanged, publish: publish, pack: pack, unpack: unpack, readAnswers: readAnswers,
   };
   // Self-checks of the other helper files, by name ("iaud-write": "délka …, hash …").
   iaud.extensions = {};

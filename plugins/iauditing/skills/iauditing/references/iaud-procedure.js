@@ -6,7 +6,7 @@
 (function installProcedure(root) {
   'use strict';
 
-  var VERSION = '2.0.0';
+  var VERSION = '2.0.1';
   var NAME = 'iaud-procedure';
 
   var isModule = typeof module === 'object' && module.exports;
@@ -457,7 +457,7 @@
     }).then(function (summary) {
       s.summaryHash = core.fnv1a(summary);
       s.summary = { chars: summary.length, empty: core.isBlank(summary) };
-      return iaud.readAnswers(s.audit, [s.procedure], { redact: options.redact });
+      return core.readAnswers(s.audit, [s.procedure], { redact: options.redact });
     }).then(function (read) {
       var p = read.procedures[0];
       var brief = function (i) {
@@ -566,9 +566,9 @@
     });
   }
 
-  iaud.generateSummary = generateSummary;
-  iaud.updateSummary = updateSummary;
-  iaud.submitProcedure = submitProcedure;
+  core.publish('generateSummary', generateSummary);
+  core.publish('updateSummary', updateSummary);
+  core.publish('submitProcedure', submitProcedure);
 
   // The self-check covers this whole function as the browser parsed it.
   var source = String(installProcedure);

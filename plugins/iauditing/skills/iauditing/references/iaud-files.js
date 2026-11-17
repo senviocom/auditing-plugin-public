@@ -8,7 +8,7 @@
 (function installFiles(root) {
   'use strict';
 
-  var VERSION = '2.0.0';
+  var VERSION = '2.0.1';
   var NAME = 'iaud-files';
 
   var isModule = typeof module === 'object' && module.exports;
@@ -1014,9 +1014,9 @@
   }
   // -- end of PDF (scripts/stamp.js copies the PDF part into verejne-zdroje.js)
 
-  iaud.listFiles = listFiles;
-  iaud.readFile = readFile;
-  iaud.findInFile = findInFile;
+  core.publish('listFiles', listFiles);
+  core.publish('readFile', readFile);
+  core.publish('findInFile', findInFile);
   // For iaud-filewrite.js.
   core.files = { documents: documents, pickFile: pickFile, publicFile: publicFile, attachedTo: attachedTo, docsBase: docsBase,
     download: download, TYPES: TYPES, loose: loose, sizeLabel: sizeLabel };

@@ -10,7 +10,7 @@
 (function installFileWrite(root) {
   'use strict';
 
-  var VERSION = '2.0.0';
+  var VERSION = '2.0.1';
   var NAME = 'iaud-filewrite';
 
   var isModule = typeof module === 'object' && module.exports;
@@ -489,12 +489,12 @@
     });
   }
 
-  iaud.uploadFile = uploadFile;
-  iaud.finishUpload = finishUpload;
-  iaud.attachFile = attachFile;
-  iaud.detachFile = detachFile;
-  iaud.renameFile = renameFile;
-  iaud.deleteFile = deleteFile;
+  core.publish('uploadFile', uploadFile);
+  core.publish('finishUpload', finishUpload);
+  core.publish('attachFile', attachFile);
+  core.publish('detachFile', detachFile);
+  core.publish('renameFile', renameFile);
+  core.publish('deleteFile', deleteFile);
 
   // The self-check covers this whole function as the browser parsed it.
   var source = String(installFileWrite);

@@ -9,7 +9,7 @@
 (function installSections(root) {
   'use strict';
 
-  var VERSION = '2.0.0';
+  var VERSION = '2.0.1';
   var NAME = 'iaud-sections';
 
   var isModule = typeof module === 'object' && module.exports;
@@ -301,9 +301,9 @@
     return change('remove', engagement, procedure, { section: section }, options);
   }
 
-  iaud.addSection = addSection;
-  iaud.renameSection = renameSection;
-  iaud.removeSection = removeSection;
+  core.publish('addSection', addSection);
+  core.publish('renameSection', renameSection);
+  core.publish('removeSection', removeSection);
 
   // The self-check covers this whole function as the browser parsed it.
   var source = String(installSections);

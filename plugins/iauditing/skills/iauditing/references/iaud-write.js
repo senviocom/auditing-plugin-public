@@ -8,7 +8,7 @@
 (function installWrite(root) {
   'use strict';
 
-  var VERSION = '2.0.0';
+  var VERSION = '2.0.1';
   var NAME = 'iaud-write';
 
   var isModule = typeof module === 'object' && module.exports;
@@ -593,7 +593,7 @@
     });
   }
 
-  iaud.saveAnswers = saveAnswers;
+  core.publish('saveAnswers', saveAnswers);
   core.writeAllowlist = WRITE_ALLOWLIST.map(function (a) { return a.auditId; });
   // For iaud-sections.js and iaud-files.js: the same rails, read-back and progress fix.
   core.write = { openForWrite: openForWrite, openAuditForWrite: openAuditForWrite, loadForms: loadForms, fixProgress: fixProgress,

@@ -35,7 +35,10 @@ from firm to firm. The plugin ships no question texts.
    a procedure marked `webOnly` and say so. Read at most 15 procedures at once.
 
 3. **Read them:** `await iaud.listQuestions('<zakázka>', ['<číslo>', '<číslo>', …])`. It
-   returns `{client, year, procedures: [{number, name, items, readOnly?}]}`.
+   returns `{client, year, procedures: [{number, name, itemCount,
+   readOnly?}], itemCount, items}`: `items` is one flat list over all the
+   procedures, each item with its `procedure` number; with `nextFrom`,
+   call again with the same arguments and `{from: nextFrom}` for the rest.
    An item is a heading (`heading`) or a question with `ref` (e.g. `"103/21"`,
    or `"180/2 (Tržby, sekce 546)"` in a sekce), `question`, `type`, `options`,
    `instructions`, `answered`, `answer` (only for Ano/Ne, a choice or a

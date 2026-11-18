@@ -13,7 +13,7 @@
 (function install(root) {
   'use strict';
 
-  var VERSION = '2.0.1';
+  var VERSION = '2.0.2';
 
   // The iAuditing version this helper was tested against (PLAN.md §6).
   var TESTED_APP_VERSION = '1.4.1';
@@ -896,15 +896,23 @@
     return sum;
   }
 
-  // Claude in Chrome's JavaScript tool cuts every text in a result after
-  // 1000 characters and every list after 100 items (VERIFY.md V2, run 4). So
-  // what Claude gets is packed: a longer text becomes {$text: [pieces of at
-  // most TEXT_PIECE characters], $chars}, a longer list {$items: [lists of at
-  // most LIST_PIECE items], $count}, nested as needed. Arguments are unpacked
-  // the same way, so Claude can pass back a packed text (a Shrnutí to
-  // restore) as it got it.
+  // Claude in Chrome's JavaScript tool filters what comes back (VERIFY.md
+  // V2, runs 4 and 5): it cuts every text after 1000 characters and every
+  // list after 100 items, replaces anything nested deeper than 5 levels (the
+  // result itself is level 1), and blocks a whole value made of three
+  // dot-separated parts ("31.12.2026", "1.4.1", "smlouva.v2.docx") as a "JWT
+  // token". So what Claude gets is packed:
+  // - a text over TEXT_PIECE characters or of three dot-separated parts:
+  //   {$text: [pieces], $chars}, joined with nothing between them;
+  // - a list over LIST_PIECE items: {$items: [groups], $count};
+  // - a part that would still go deeper than MAX_DEPTH: {$json: [pieces]},
+  //   its JSON text in pieces (the packed form, so it unpacks the same way).
+  // Arguments are unpacked the same way, so Claude can pass back a packed
+  // text (a Shrnutí to restore) as it got it.
   var TEXT_PIECE = 900;
   var LIST_PIECE = 100;
+  var MAX_DEPTH = 5;
+  var THREE_PARTS = /^[A-Za-z0-9_-]+[.][A-Za-z0-9_-]+[.][A-Za-z0-9_-]+$/;
 
   function isPlain(v) {
     return v !== null && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype;
@@ -918,7 +926,14 @@
       // Never between the two halves of a surrogate pair.
       var c = text.charCodeAt(end - 1);
       if (end < text.length && c >= 0xd800 && c <= 0xdbff) end--;
-      out.push(text.slice(at, end));
+      var piece = text.slice(at, end);
+      // "31.12.2026" → "31." + "12.2026": neither is three parts.
+      if (THREE_PARTS.test(piece)) {
+        var dot = piece.indexOf('.') + 1;
+        out.push(piece.slice(0, dot), piece.slice(dot));
+      } else {
+        out.push(piece);
+      }
       at = end;
     }
     return out;
@@ -931,8 +946,12 @@
     return { $items: packList(groups), $count: list.length };
   }
 
+  function packText(text) {
+    return text.length > TEXT_PIECE || THREE_PARTS.test(text) ? { $text: packList(pieces(text)), $chars: text.length } : text;
+  }
+
   function pack(v) {
-    if (typeof v === 'string') return v.length > TEXT_PIECE ? { $text: packList(pieces(v)), $chars: v.length } : v;
+    if (typeof v === 'string') return packText(v);
     if (Array.isArray(v)) return packList(v.map(pack));
     if (isPlain(v)) {
       var o = {};
@@ -940,6 +959,27 @@
       return o;
     }
     return v;
+  }
+
+  // Levels of objects and lists in v: a text or number 0, {} or [] 1.
+  function height(v) {
+    if (!Array.isArray(v) && !isPlain(v)) return 0;
+    var h = 0;
+    (Array.isArray(v) ? v : Object.keys(v).map(function (k) { return v[k]; }))
+      .forEach(function (x) { h = Math.max(h, height(x)); });
+    return h + 1;
+  }
+
+  // A packed value v at `level` (the result is level 1), kept within MAX_DEPTH.
+  function fit(v, level) {
+    if (level + height(v) - 1 <= MAX_DEPTH) return v;
+    if (level < MAX_DEPTH - 1) {
+      if (Array.isArray(v)) return v.map(function (x) { return fit(x, level + 1); });
+      var o = {};
+      Object.keys(v).forEach(function (k) { o[k] = fit(v[k], level + 1); });
+      return o;
+    }
+    return { $json: pieces(JSON.stringify(v)) };
   }
 
   function isPackedList(v) {
@@ -954,7 +994,8 @@
   }
 
   function unpack(v) {
-    if (isPlain(v) && typeof v.$chars === 'number' && v.$text) return unpackList(v.$text).join('');
+    if (isPlain(v) && Array.isArray(v.$json)) return unpack(JSON.parse(v.$json.join('')));
+    if (isPlain(v) && typeof v.$chars === 'number' && v.$text) return unpackList(unpack(v.$text)).join('');
     if (isPackedList(v)) return unpackList(v).map(unpack);
     if (Array.isArray(v)) return v.map(unpack);
     if (isPlain(v)) {
@@ -965,13 +1006,79 @@
     return v;
   }
 
+  function forClaude(r) {
+    return fit(pack(r), 1);
+  }
+
   // Each function Claude calls, with packed results and unpacked arguments.
-  // The helper files call each other through iaud._internal, unpacked.
-  function publish(name, fn) {
+  // `view` reshapes a result for Claude first. The helper files call each
+  // other through iaud._internal, unpacked.
+  function publish(name, fn, view) {
     iaud[name] = function () {
-      var r = fn.apply(null, Array.prototype.slice.call(arguments).map(unpack));
-      return r && typeof r.then === 'function' ? r.then(pack) : pack(r);
+      var args = Array.prototype.slice.call(arguments).map(unpack);
+      var r = fn.apply(null, args);
+      var out = function (x) { return forClaude(view ? view(x, args) : x); };
+      return r && typeof r.then === 'function' ? r.then(out) : out(r);
     };
+  }
+
+  // showProcedure for Claude: one flat list of `items` in the app's order
+  // instead of forms → parts → items (too deep for the tool), each item with
+  // its sekce, at most PROCEDURE_PAGE items per call ({from: nextFrom} for the
+  // rest).
+  var PROCEDURE_PAGE = 100;
+  function procedureView(r, args) {
+    var items = [];
+    var several = r.forms.length > 1;
+    r.forms.forEach(function (f, i) {
+      if (f.readOnly) {
+        items.push(several ? { form: i + 1, readOnly: f.readOnly } : { readOnly: f.readOnly });
+        return;
+      }
+      f.parts.forEach(function (part) {
+        part.items.forEach(function (item) {
+          var out = {};
+          if (several) out.form = i + 1;
+          if (part.section) out.section = part.section.name;
+          Object.keys(item).forEach(function (k) { out[k] = item[k]; });
+          items.push(out);
+        });
+      });
+    });
+    var from = Math.max(0, Number((args[2] || {}).from) || 0);
+    var view = {};
+    Object.keys(r).forEach(function (k) { if (k !== 'forms') view[k] = r[k]; });
+    view.itemCount = items.length;
+    view.items = items.slice(from, from + PROCEDURE_PAGE);
+    if (from) view.from = from;
+    if (from + PROCEDURE_PAGE < items.length) view.nextFrom = from + PROCEDURE_PAGE;
+    return view;
+  }
+
+  // listQuestions and readAnswers for Claude: `procedures` without their
+  // questions (each with its `itemCount`) and one flat list of `items`, each
+  // with its `procedure` number, in pages of PROCEDURE_PAGE.
+  function itemsView(r, args) {
+    var items = [];
+    var view = {};
+    Object.keys(r).forEach(function (k) { if (k !== 'procedures') view[k] = r[k]; });
+    view.procedures = r.procedures.map(function (p) {
+      var meta = {};
+      Object.keys(p).forEach(function (k) { if (k !== 'items') meta[k] = p[k]; });
+      meta.itemCount = p.items.length;
+      p.items.forEach(function (item) {
+        var out = { procedure: p.number };
+        Object.keys(item).forEach(function (k) { out[k] = item[k]; });
+        items.push(out);
+      });
+      return meta;
+    });
+    var from = Math.max(0, Number((args[2] || {}).from) || 0);
+    view.itemCount = items.length;
+    view.items = items.slice(from, from + PROCEDURE_PAGE);
+    if (from) view.from = from;
+    if (from + PROCEDURE_PAGE < items.length) view.nextFrom = from + PROCEDURE_PAGE;
+    return view;
   }
 
   publish('check', check);
@@ -980,9 +1087,9 @@
   publish('openAudit', openAudit);
   publish('openProcedure', openProcedure);
   publish('freshView', freshView);
-  publish('showProcedure', showProcedure);
-  publish('listQuestions', listQuestions);
-  publish('readAnswers', readAnswers);
+  publish('showProcedure', showProcedure, procedureView);
+  publish('listQuestions', listQuestions, itemsView);
+  publish('readAnswers', readAnswers, itemsView);
   publish('computeProgress', computeProgress);
   publish('readOnlyReason', readOnlyReason);
 
@@ -995,7 +1102,9 @@
     showForm: showForm, layoutForm: layoutForm, computeProgress: computeProgress, readOnlyReason: readOnlyReason,
     isBlank: isBlank, isHeading: isHeading, findAnswer: findAnswer, itemKey: itemKey, displayAnswer: displayAnswer,
     redacted: redacted, fnv1a: fnv1a, TYPE_LABELS: TYPE_LABELS,
-    markChanged: markChanged, publish: publish, pack: pack, unpack: unpack, readAnswers: readAnswers,
+    markChanged: markChanged, publish: publish, pack: pack, unpack: unpack, forClaude: forClaude,
+    readAnswers: readAnswers, showProcedure: showProcedure, procedureView: procedureView,
+    listQuestions: listQuestions, itemsView: itemsView,
   };
   // Self-checks of the other helper files, by name ("iaud-write": "délka …, hash …").
   iaud.extensions = {};

@@ -6,7 +6,7 @@
 (function installProcedure(root) {
   'use strict';
 
-  var VERSION = '2.0.1';
+  var VERSION = '2.0.2';
   var NAME = 'iaud-procedure';
 
   var isModule = typeof module === 'object' && module.exports;

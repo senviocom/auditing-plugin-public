@@ -44,9 +44,12 @@ read is for the question at hand, on the user's request.
 ## 3. Read their answers
 
 `await iaud.readAnswers('<zakázka>', ['<číslo>', '<číslo>'])` reads them one
-after the other at a human pace. It returns `{client, year, procedures}`;
-each procedure has `number`, `name`, `status`, `progress`, the counts
-`answered` and `empty`, possibly `readOnly`, and `items`. An item
+after the other at a human pace. It returns `{client, year, procedures,
+itemCount, items}`. Each procedure has `number`, `name`, `status`,
+`progress`, the counts `answered` and `empty`, `itemCount` and possibly
+`readOnly`. `items` is one flat list over all of them, in order, each item
+with its `procedure` number; with `nextFrom`, call again with the same
+arguments and `{from: nextFrom}` for the rest. An item
 is a heading (`heading`) or an answer with:
 
 - `ref`: where it is, e.g. `"120/7"` or `"180/2 (Tržby, sekce 546)"`;

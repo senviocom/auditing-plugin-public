@@ -217,22 +217,22 @@ It runs only in the register's own page, with that page's cookies, and sends
 nothing anywhere else. In the tab of the register:
 
 1. **Already loaded?** Run:
-   `typeof vz === 'undefined' ? 'načíst' : vz.version === '2.0.1' && vz.selfCheck === 'délka 39776, hash 07ac742f' ? 'OK' : 'načíst'`
+   `typeof vz === 'undefined' ? 'načíst' : vz.version === '2.0.2' && vz.selfCheck === 'délka 39776, hash 93c0aad2' ? 'OK' : 'načíst'`
 2. `načíst`: run this loader exactly as written:
 
 <!-- loader: verejne-zdroje.js -->
 ```js
 await new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v2.0.1/plugins/iauditing/skills/iauditing/references/verejne-zdroje.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/2.0.1/verejne-zdroje.js'];
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v2.0.2/plugins/iauditing/skills/iauditing/references/verejne-zdroje.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/2.0.2/verejne-zdroje.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-4JDEaQYM7IvaGS0kja0cpN4JVd4I8luhTJEp7gWIDfWvP9jIOSMNChwH/Wf/B7uy';
+    s.integrity = 'sha384-uGq/IelMdzWL3GvWvw6YnLOWMOYngmJR0Lt4J2iX2lE7FJ2E0QuXGFM0s16rxQHE';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof vz === 'object' && vz.version === '2.0.1' && 'verejne-zdroje 2.0.1 loaded, ' + vz.selfCheck) || 'nenačteno'); };
+    s.onload = function () { done((typeof vz === 'object' && vz.version === '2.0.2' && 'verejne-zdroje 2.0.2 loaded, ' + vz.selfCheck) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -246,7 +246,7 @@ await new Promise(function (done) {
    tool, as for `iaud.js`. Either way the result must be exactly:
 
 ```
-verejne-zdroje 2.0.1 loaded, délka 39776, hash 07ac742f
+verejne-zdroje 2.0.2 loaded, délka 39776, hash 93c0aad2
 ```
 
 A different length or hash means it arrived incomplete: load it once more;

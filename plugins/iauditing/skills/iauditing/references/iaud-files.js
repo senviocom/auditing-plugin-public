@@ -8,7 +8,7 @@
 (function installFiles(root) {
   'use strict';
 
-  var VERSION = '2.0.1';
+  var VERSION = '2.0.2';
   var NAME = 'iaud-files';
 
   var isModule = typeof module === 'object' && module.exports;

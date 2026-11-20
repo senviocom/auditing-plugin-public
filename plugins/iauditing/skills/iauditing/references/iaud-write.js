@@ -8,7 +8,7 @@
 (function installWrite(root) {
   'use strict';
 
-  var VERSION = '2.0.2';
+  var VERSION = '2.0.3';
   var NAME = 'iaud-write';
 
   var isModule = typeof module === 'object' && module.exports;

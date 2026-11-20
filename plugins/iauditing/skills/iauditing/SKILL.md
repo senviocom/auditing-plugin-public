@@ -259,7 +259,7 @@ what is saved instead (see "A step stopped by a safety classifier" in
 Run each snippet below with `javascript_tool` on the iAuditing tab.
 
 1. **Already loaded?** Run:
-   `typeof iaud === 'undefined' ? 'chybí' : iaud.version === '2.0.2' && iaud.selfCheck === 'délka 48545, hash 00bec8d7' ? 'OK' : 'jiná verze'`
+   `typeof iaud === 'undefined' ? 'chybí' : iaud.version === '2.0.3' && iaud.selfCheck === 'délka 48545, hash 6ce1697c' ? 'OK' : 'jiná verze'`
    - `OK`: go to step 2.
 2. **Otherwise** (`chybí` or `jiná verze`; a full page reload removes the
    helper), run this loader exactly as written. The page fetches the helper
@@ -269,16 +269,16 @@ Run each snippet below with `javascript_tool` on the iAuditing tab.
 <!-- loader: iaud.js -->
 ```js
 await new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v2.0.2/plugins/iauditing/skills/iauditing/references/iaud.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/2.0.2/iaud.js'];
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v2.0.3/plugins/iauditing/skills/iauditing/references/iaud.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/2.0.3/iaud.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-lCmXhSfQO0aZsxdONYrBcmavb4ymCjBDl7IuDNhXl32BE5M5F3vR5Y5ivGscVEOe';
+    s.integrity = 'sha384-G09i2OMNHZ5/bpSQ5FJskwwbcKdutaTTvzy2NTS6CYNPADu2H3jwK+Zu575c6lxE';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof iaud === 'object' && iaud.version === '2.0.2' && 'iaud 2.0.2 loaded, ' + iaud.selfCheck) || 'nenačteno'); };
+    s.onload = function () { done((typeof iaud === 'object' && iaud.version === '2.0.3' && 'iaud 2.0.3 loaded, ' + iaud.selfCheck) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -298,7 +298,7 @@ await new Promise(function (done) {
 The result must be exactly:
 
 ```
-iaud 2.0.2 loaded, délka 48545, hash 00bec8d7
+iaud 2.0.3 loaded, délka 48545, hash 6ce1697c
 ```
 
 A different length or hash means the helper arrived incomplete or changed.
@@ -488,22 +488,22 @@ iAuditing's stored counters on purpose.
 ### Load the write part (once per tab, after iaud.js)
 
 1. Make sure `iaud.js` is loaded (step 1). Then run:
-   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-write']) === 'délka 28039, hash 657423e0' ? 'OK' : 'načíst'`
+   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-write']) === 'délka 28039, hash d40bad9b' ? 'OK' : 'načíst'`
 2. `načíst`: run this loader exactly as written:
 
 <!-- loader: iaud-write.js -->
 ```js
 await new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v2.0.2/plugins/iauditing/skills/iauditing/references/iaud-write.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/2.0.2/iaud-write.js'];
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v2.0.3/plugins/iauditing/skills/iauditing/references/iaud-write.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/2.0.3/iaud-write.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-kefYrY48H6ZNzvLBou6XzoIpCoXvM9g1emZOcayCzyDUukJEuM8eydWxfsvQH+yN';
+    s.integrity = 'sha384-D3YdUld45aUpegxgqiDOOOqV4FUxifqphkRQT4IQt61GElfW1jItpmGA6yM+gEDH';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-write'] && 'iaud-write 2.0.2 loaded, ' + iaud.extensions['iaud-write']) || 'nenačteno'); };
+    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-write'] && 'iaud-write 2.0.3 loaded, ' + iaud.extensions['iaud-write']) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -516,7 +516,7 @@ await new Promise(function (done) {
    JavaScript tool, as for `iaud.js`. Either way the result must be exactly:
 
 ```
-iaud-write 2.0.2 loaded, délka 28039, hash 657423e0
+iaud-write 2.0.3 loaded, délka 28039, hash d40bad9b
 ```
 
 The same rule as in step 1 applies: a different length or hash, or a text
@@ -712,22 +712,22 @@ Soubory and follow it.** In short:
 ### Load the Soubory part (once per tab, after iaud.js)
 
 1. Make sure `iaud.js` is loaded (step 1). Then run:
-   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-files']) === 'délka 42607, hash 74ecefd7' ? 'OK' : 'načíst'`
+   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-files']) === 'délka 42607, hash 05b89900' ? 'OK' : 'načíst'`
 2. `načíst`: run this loader exactly as written:
 
 <!-- loader: iaud-files.js -->
 ```js
 await new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v2.0.2/plugins/iauditing/skills/iauditing/references/iaud-files.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/2.0.2/iaud-files.js'];
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v2.0.3/plugins/iauditing/skills/iauditing/references/iaud-files.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/2.0.3/iaud-files.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-P5rqRSLAOGMUMu8kaHrpxGuapLE44EG9VlqYGf9hZrMCPzMxRa0Q9ylyaCdD0H4o';
+    s.integrity = 'sha384-Iz4gLqPhm8z29PBLNWsQC/RPa41D+RGu2p/Zc2jnq0askH9hKJqghpENziHKrs/D';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-files'] && 'iaud-files 2.0.2 loaded, ' + iaud.extensions['iaud-files']) || 'nenačteno'); };
+    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-files'] && 'iaud-files 2.0.3 loaded, ' + iaud.extensions['iaud-files']) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -740,7 +740,7 @@ await new Promise(function (done) {
    result must be exactly:
 
 ```
-iaud-files 2.0.2 loaded, délka 42607, hash 74ecefd7
+iaud-files 2.0.3 loaded, délka 42607, hash 05b89900
 ```
 
 Same rule as for the other files: on a different length or hash, or a text
@@ -770,22 +770,22 @@ Reading needs a role on the zakázka. File contents are client data and
 Only when the user asks for it. Follow `references/soubory.md` §6–9.
 
 1. Make sure `iaud.js`, `iaud-write.js` and `iaud-files.js` are loaded. Then run:
-   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-filewrite']) === 'délka 24487, hash f766eed5' ? 'OK' : 'načíst'`
+   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-filewrite']) === 'délka 24487, hash 4b554776' ? 'OK' : 'načíst'`
 2. `načíst`: run this loader exactly as written:
 
 <!-- loader: iaud-filewrite.js -->
 ```js
 await new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v2.0.2/plugins/iauditing/skills/iauditing/references/iaud-filewrite.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/2.0.2/iaud-filewrite.js'];
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v2.0.3/plugins/iauditing/skills/iauditing/references/iaud-filewrite.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/2.0.3/iaud-filewrite.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-hty2SC9dSsg9GaPFGmJzadJYd3vSJJUMgi8cM8KbBgBOpzAIvqAIA1gvRFUkSYce';
+    s.integrity = 'sha384-8ahRsqA5zAUdx1BAp9HnbCFXsB63pORVx/T5DNQRUypJloohuNeEmBBYfH7JFbZl';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-filewrite'] && 'iaud-filewrite 2.0.2 loaded, ' + iaud.extensions['iaud-filewrite']) || 'nenačteno'); };
+    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-filewrite'] && 'iaud-filewrite 2.0.3 loaded, ' + iaud.extensions['iaud-filewrite']) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -798,7 +798,7 @@ await new Promise(function (done) {
    result must be exactly:
 
 ```
-iaud-filewrite 2.0.2 loaded, délka 24487, hash f766eed5
+iaud-filewrite 2.0.3 loaded, délka 24487, hash 4b554776
 ```
 
 Same rule as for the other files; the order is `iaud.js`, `iaud-write.js`,
@@ -832,22 +832,22 @@ removed sekce takes **all its answers** with it, for good.
 ### Load the sekce part (once per tab, after iaud.js and iaud-write.js)
 
 1. Make sure `iaud.js` and `iaud-write.js` are loaded (as for saving). Then run:
-   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-sections']) === 'délka 15173, hash 97f280d8' ? 'OK' : 'načíst'`
+   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-sections']) === 'délka 15173, hash be10d65d' ? 'OK' : 'načíst'`
 2. `načíst`: run this loader exactly as written:
 
 <!-- loader: iaud-sections.js -->
 ```js
 await new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v2.0.2/plugins/iauditing/skills/iauditing/references/iaud-sections.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/2.0.2/iaud-sections.js'];
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v2.0.3/plugins/iauditing/skills/iauditing/references/iaud-sections.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/2.0.3/iaud-sections.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-yI+FBoJuUsqsEF7FOFv4fqbhXUc/acHL8eWXHJPdTEpVkSsfHz4GYAfQE8gzEmBQ';
+    s.integrity = 'sha384-73gecDuEVDgjDm95Z0ohuTOpgzzoP7InwCi2FY5ry2IFsAQn7qnegqZOce6Xn+G2';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-sections'] && 'iaud-sections 2.0.2 loaded, ' + iaud.extensions['iaud-sections']) || 'nenačteno'); };
+    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-sections'] && 'iaud-sections 2.0.3 loaded, ' + iaud.extensions['iaud-sections']) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -860,7 +860,7 @@ await new Promise(function (done) {
    result must be exactly:
 
 ```
-iaud-sections 2.0.2 loaded, délka 15173, hash 97f280d8
+iaud-sections 2.0.3 loaded, délka 15173, hash be10d65d
 ```
 
 Same rule as for the other files: on a different length or hash, or a text
@@ -919,22 +919,22 @@ replaces the current text for good. Only in a rozpracovaná procedure.
 ### Load the procedure part (once per tab, after iaud.js and iaud-write.js)
 
 1. Make sure `iaud.js` and `iaud-write.js` are loaded (as for saving). Then run:
-   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-procedure']) === 'délka 27527, hash fc7d5255' ? 'OK' : 'načíst'`
+   `(typeof iaud !== 'undefined' && iaud.extensions && iaud.extensions['iaud-procedure']) === 'délka 27527, hash 59380f9e' ? 'OK' : 'načíst'`
 2. `načíst`: run this loader exactly as written:
 
 <!-- loader: iaud-procedure.js -->
 ```js
 await new Promise(function (done) {
-  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v2.0.2/plugins/iauditing/skills/iauditing/references/iaud-procedure.js',
-    'https://senviocom.github.io/auditing-plugin-public/helpers/2.0.2/iaud-procedure.js'];
+  var urls = ['https://cdn.jsdelivr.net/gh/senviocom/auditing-plugin-public@iauditing-v2.0.3/plugins/iauditing/skills/iauditing/references/iaud-procedure.js',
+    'https://senviocom.github.io/auditing-plugin-public/helpers/2.0.3/iaud-procedure.js'];
   (function next(i) {
     if (i === urls.length) return done('nenačteno');
     var s = document.createElement('script');
     s.src = urls[i];
-    s.integrity = 'sha384-TaDYoTFPnAzK4jI2ICo8GBAmOHNA3/JkVuwu8ym8su2kKeZWVmMH1+P8EC08CrPK';
+    s.integrity = 'sha384-h/L4J8Bd6QwCT1vLKHvKZ5sqKtM+CH9eF8jhT38dimThTX45U3Q15e7SHdEpuJND';
     s.crossOrigin = 'anonymous';
     s.referrerPolicy = 'no-referrer';
-    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-procedure'] && 'iaud-procedure 2.0.2 loaded, ' + iaud.extensions['iaud-procedure']) || 'nenačteno'); };
+    s.onload = function () { done((typeof iaud === 'object' && iaud.extensions && iaud.extensions['iaud-procedure'] && 'iaud-procedure 2.0.3 loaded, ' + iaud.extensions['iaud-procedure']) || 'nenačteno'); };
     s.onerror = function () { s.remove(); next(i + 1); };
     document.head.appendChild(s);
   })(0);
@@ -947,7 +947,7 @@ await new Promise(function (done) {
    result must be exactly:
 
 ```
-iaud-procedure 2.0.2 loaded, délka 27527, hash fc7d5255
+iaud-procedure 2.0.3 loaded, délka 27527, hash 59380f9e
 ```
 
 Same rule as for the other files: on a different length or hash, or a text
